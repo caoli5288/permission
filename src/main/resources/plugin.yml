@@ -1,0 +1,10 @@
+name: Permission
+version: ${project.version}
+main: com.mengcraft.permission.Main
+
+commands:
+  permission:
+    aliases: [player, group]
+    permission: permission.admin
+
+depend: [SimpleORM]
