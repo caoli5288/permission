@@ -1,8 +1,6 @@
-# Permission
-这是一个简单的给玩家添加限时权限的插件。
-
+#  Permission
 ## Command
-- /permission:player $player
-    - 列出指定玩家拥有的权限。
-- /permission:player $player $permission $day
-    - 给指定玩家添加指定权限。
+- /permission user <name> add <perm> <day>
+- /permission user <name> del <perm>
+- /permission zone <name> add <perm>
+- /permission zone <name> del <perm>

@@ -8,7 +8,7 @@ import javax.persistence.Id;
  * Created on 15-10-26.
  */
 @Entity
-public class PermissionGroup {
+public class PermissionZone {
 
     @Id
     private int id;
