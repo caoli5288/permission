@@ -1,6 +1,7 @@
 package com.mengcraft.permission;
 
 import com.mengcraft.permission.entity.PermissionUser;
+import com.mengcraft.permission.entity.PermissionZone;
 import com.mengcraft.simpleorm.EbeanHandler;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -22,7 +23,7 @@ public class Executor implements Listener {
 
     public Executor(Main main, EbeanHandler db) {
         this.main = main;
-        this.db   = db;
+        this.db = db;
     }
 
     @EventHandler
@@ -37,11 +38,39 @@ public class Executor implements Listener {
                     .eq("name", player.getName())
                     .gt("outdated", new Timestamp(currentTimeMillis()))
                     .findList();
-            for (PermissionUser line : permissionList) {
-                player.addAttachment(main, line.getValue(), true);
+            for (PermissionUser user : permissionList) {
+                apply(player, user);
             }
             permissionList.clear();
         };
+    }
+
+    private void apply(Player player, PermissionUser user) {
+        if (user.isType()) {
+            List<PermissionZone> list = db.find(PermissionZone.class)
+                    .where()
+                    .eq("name", user.getValue())
+                    .findList();
+            for (PermissionZone line : list) {
+                apply(player, line);
+            }
+        } else {
+            player.addAttachment(main, user.getValue(), true);
+        }
+    }
+
+    private void apply(Player player, PermissionZone zone) {
+        if (zone.isType()) {
+            List<PermissionZone> list = db.find(PermissionZone.class)
+                    .where()
+                    .eq("name", zone.getValue())
+                    .findList();
+            for (PermissionZone line : list) {
+                apply(player, line);
+            }
+        } else {
+            player.addAttachment(main, zone.getValue(), true);
+        }
     }
 
 }
