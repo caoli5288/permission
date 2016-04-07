@@ -86,7 +86,11 @@ public class PermissionUser implements Permission {
 
     @Override
     public String toString() {
-        return "value='" + value + '\'' + ", group=" + type + ", outdated='" + FORMAT.format(outdated) + '\'';
+        return "value='" + value + '\'' + ", type=" + type + ", outdated='" + FORMAT.format(outdated) + '\'';
+    }
+
+    public long getOutdatedTime() {
+        return getOutdated().getTime();
     }
 
 }

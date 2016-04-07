@@ -8,7 +8,7 @@ import javax.persistence.Id;
  * Created on 15-10-26.
  */
 @Entity
-public class PermissionZone implements Permission{
+public class PermissionZone implements Permission {
 
     @Id
     private int id;
@@ -52,6 +52,11 @@ public class PermissionZone implements Permission{
 
     public void setType(boolean type) {
         this.type = type;
+    }
+
+    @Override
+    public String toString() {
+        return "value='" + value + '\'' + ", type=" + type;
     }
 
 }

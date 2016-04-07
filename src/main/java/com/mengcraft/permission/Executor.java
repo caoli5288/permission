@@ -8,10 +8,15 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.permissions.PermissionAttachment;
 
 import java.sql.Timestamp;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import static com.mengcraft.permission.Util.cutHead;
+import static com.mengcraft.permission.Util.isWithdraw;
 import static java.lang.System.currentTimeMillis;
 
 /**
@@ -28,34 +33,38 @@ class Executor implements Listener {
     }
 
     @EventHandler
-    public void handle(final PlayerJoinEvent event) {
-        main.asyncTask(query(event.getPlayer()));
-    }
-
-    private Runnable query(Player player) {
-        return () -> {
-            List<PermissionUser> permissionList = db.find(PermissionUser.class)
+    public void handle(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        main.execute(() -> {
+            List<PermissionUser> fetched = db.find(PermissionUser.class)
                     .where()
                     .eq("name", player.getName())
                     .gt("outdated", new Timestamp(currentTimeMillis()))
+                    .orderBy("type desc")
                     .findList();
-            for (PermissionUser user : permissionList) {
-                apply(player, user);
-            }
-        };
+            Map<String, Boolean> attachMap = new HashMap<>();
+            fetched.forEach(line -> {
+                attach(attachMap, line);
+            });
+            PermissionAttachment attached = player.addAttachment(main);
+            attachMap.forEach((key, value) -> {
+                attached.setPermission(key, value);
+            });
+        });
     }
 
-    private void apply(Player player, Permission permission) {
-        if (permission.isType()) {
-            List<PermissionZone> list = db.find(PermissionZone.class)
+    private void attach(Map<String, Boolean> attachMap, Permission perm) {
+        if (perm.isType()) {
+            List<PermissionZone> fetched = db.find(PermissionZone.class)
                     .where()
-                    .eq("name", permission.getValue())
+                    .eq("name", perm.getValue())
+                    .orderBy("type desc")
                     .findList();
-            for (PermissionZone line : list) {
-                apply(player, line);
-            }
+            fetched.forEach(line -> attach(attachMap, line));
+        } else if (isWithdraw(perm.getValue())) {
+            attachMap.put(cutHead(perm.getValue(), 1), false);
         } else {
-            player.addAttachment(main, permission.getValue(), true);
+            attachMap.put(perm.getValue(), true);
         }
     }
 

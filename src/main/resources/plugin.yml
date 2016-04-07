@@ -4,7 +4,12 @@ main: com.mengcraft.permission.Main
 
 commands:
   permission:
-    aliases: [player, group]
+    description: Base command for permission manager.
     permission: permission.admin
+
+permissions:
+  permission.admin:
+    description: Base permission for permission manager.
+    default: op
 
 depend: [SimpleORM]
