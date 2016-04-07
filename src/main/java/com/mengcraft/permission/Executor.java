@@ -1,5 +1,6 @@
 package com.mengcraft.permission;
 
+import com.mengcraft.permission.entity.Permission;
 import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
 import com.mengcraft.simpleorm.EbeanHandler;
@@ -16,12 +17,12 @@ import static java.lang.System.currentTimeMillis;
 /**
  * Created on 15-10-20.
  */
-public class Executor implements Listener {
+class Executor implements Listener {
 
     private final Main main;
     private final EbeanHandler db;
 
-    public Executor(Main main, EbeanHandler db) {
+    Executor(Main main, EbeanHandler db) {
         this.main = main;
         this.db = db;
     }
@@ -41,35 +42,20 @@ public class Executor implements Listener {
             for (PermissionUser user : permissionList) {
                 apply(player, user);
             }
-            permissionList.clear();
         };
     }
 
-    private void apply(Player player, PermissionUser user) {
-        if (user.isType()) {
+    private void apply(Player player, Permission permission) {
+        if (permission.isType()) {
             List<PermissionZone> list = db.find(PermissionZone.class)
                     .where()
-                    .eq("name", user.getValue())
+                    .eq("name", permission.getValue())
                     .findList();
             for (PermissionZone line : list) {
                 apply(player, line);
             }
         } else {
-            player.addAttachment(main, user.getValue(), true);
-        }
-    }
-
-    private void apply(Player player, PermissionZone zone) {
-        if (zone.isType()) {
-            List<PermissionZone> list = db.find(PermissionZone.class)
-                    .where()
-                    .eq("name", zone.getValue())
-                    .findList();
-            for (PermissionZone line : list) {
-                apply(player, line);
-            }
-        } else {
-            player.addAttachment(main, zone.getValue(), true);
+            player.addAttachment(main, permission.getValue(), true);
         }
     }
 

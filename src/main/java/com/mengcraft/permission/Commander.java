@@ -17,34 +17,35 @@ import static java.lang.System.currentTimeMillis;
 /**
  * Created on 15-10-20.
  */
-public class Commander implements CommandExecutor {
+class Commander implements CommandExecutor {
 
     private static final long DAY_TIME = 86400000;
 
     private final EbeanHandler db;
     private final Main main;
 
-    public Commander(Main main, EbeanHandler db) {
+    Commander(Main main, EbeanHandler db) {
         this.db = db;
         this.main = main;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] arguments) {
-        Iterator<String> iterator = Arrays.asList(arguments).iterator();
-        if (iterator.hasNext()) {
-            return execute(sender,
-                    iterator.next(),
-                    iterator.hasNext() ? iterator.next() : null,
-                    iterator.hasNext() ? Integer.parseInt(iterator.next()) : 0
+        Iterator<String> itr = Arrays.asList(arguments).iterator();
+        if (itr.hasNext()) {
+            execute(sender,
+                    itr.next(),
+                    itr.hasNext() ? itr.next() : null,
+                    itr.hasNext() ? Integer.parseInt(itr.next()) : 0
             );
+            return true;
         } else {
             sender.sendMessage(ChatColor.DARK_RED + "/permission $player $permission $day");
         }
         return false;
     }
 
-    private boolean execute(CommandSender sender, String name, String permission, long time) {
+    private void execute(CommandSender sender, String name, String permission, long time) {
         if (permission == null) {
             List<PermissionUser> permissionList = db.find(PermissionUser.class)
                     .where()
@@ -56,7 +57,7 @@ public class Commander implements CommandExecutor {
             }
             sender.sendMessage(ChatColor.GOLD + "<<<");
         } else if (time < 1) {
-            return false;
+            sender.sendMessage(ChatColor.GOLD + "You must type a daytime!");
         } else {
             PermissionUser user = db.find(PermissionUser.class)
                     .where()
@@ -65,7 +66,7 @@ public class Commander implements CommandExecutor {
                     .gt("outdated", new Timestamp(currentTimeMillis()))
                     .findUnique();
             if (user == null) {
-                sender.sendMessage(ChatColor.GOLD + "Insert new permission!");
+                sender.sendMessage(ChatColor.GOLD + "Inserted new permission!");
 
                 PermissionUser inserted = new PermissionUser();
                 inserted.setName(name);
@@ -74,14 +75,13 @@ public class Commander implements CommandExecutor {
 
                 db.insert(inserted);
             } else {
-                sender.sendMessage(ChatColor.GOLD + "Update exists permission!");
+                sender.sendMessage(ChatColor.GOLD + "Update exist permission!");
 
                 user.setOutdated(new Timestamp(user.getOutdated().getTime() + time * DAY_TIME));
 
                 db.update(user);
             }
         }
-        return true;
     }
 
 }
