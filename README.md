@@ -29,3 +29,6 @@ This is a light weight permission plugin for bukkit based minecraft server.
 
 ## Require
 - [SimpleORM](https://github.com/caoli5288/SimpleORM/releases)
+
+## License
+All source and binary file release under GPLv2.
