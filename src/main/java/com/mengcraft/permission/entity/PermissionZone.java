@@ -56,7 +56,7 @@ public class PermissionZone implements Permission {
 
     @Override
     public String toString() {
-        return "value='" + value + '\'' + ", type=" + type;
+        return "value='" + value + '\'';
     }
 
 }

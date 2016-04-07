@@ -17,6 +17,7 @@ import java.util.Map;
 
 import static com.mengcraft.permission.Util.cutHead;
 import static com.mengcraft.permission.Util.isWithdraw;
+import static com.mengcraft.permission.Util.now;
 import static java.lang.System.currentTimeMillis;
 
 /**
@@ -39,7 +40,7 @@ class Executor implements Listener {
             List<PermissionUser> fetched = db.find(PermissionUser.class)
                     .where()
                     .eq("name", player.getName())
-                    .gt("outdated", new Timestamp(currentTimeMillis()))
+                    .gt("outdated", new Timestamp(now()))
                     .orderBy("type desc")
                     .findList();
             Map<String, Boolean> attachMap = new HashMap<>();
@@ -57,7 +58,7 @@ class Executor implements Listener {
         if (perm.isType()) {
             List<PermissionZone> fetched = db.find(PermissionZone.class)
                     .where()
-                    .eq("name", perm.getValue())
+                    .eq("name", cutHead(perm.getValue(), 1))
                     .orderBy("type desc")
                     .findList();
             fetched.forEach(line -> attach(attachMap, line));
