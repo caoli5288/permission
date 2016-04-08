@@ -14,7 +14,7 @@
         <dependency>
             <groupId>com.mengcraft</groupId>
             <artifactId>simpleorm</artifactId>
-            <version>0.1.11</version>
+            <version>0.2.1</version>
         </dependency>
     </dependencies>
 

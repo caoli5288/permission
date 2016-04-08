@@ -7,6 +7,8 @@ import com.mengcraft.simpleorm.EbeanManager;
 import org.bukkit.ChatColor;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+
 /**
  * Created on 15-10-20.
  */
@@ -14,10 +16,18 @@ public class Main extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        saveDefaultConfig();
+
         EbeanHandler db = EbeanManager.DEFAULT.getHandler(this);
         if (!db.isInitialized()) {
             db.define(PermissionUser.class);
             db.define(PermissionZone.class);
+            if (getConfig().getBoolean("offline")) {
+                db.setDriver("org.sqlite.JDBC");
+                db.setUrl("jdbc:sqlite:" + new File(getDataFolder(), "database.db"));
+                db.setUserName("");
+                db.setPassword("");
+            }
             try {
                 db.initialize();
             } catch (Exception e) {
