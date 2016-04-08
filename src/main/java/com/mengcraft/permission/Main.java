@@ -37,7 +37,9 @@ public class Main extends JavaPlugin {
         db.install();
         db.reflect();
 
-        getServer().getPluginManager().registerEvents(new Executor(this, db), this);
+        Fetcher fetcher = new Fetcher(this);
+
+        getServer().getPluginManager().registerEvents(new Executor(fetcher), this);
         getCommand("permission").setExecutor(new Commander(this, db));
 
         String[] strings = {
@@ -47,8 +49,16 @@ public class Main extends JavaPlugin {
         getServer().getConsoleSender().sendMessage(strings);
     }
 
+    void execute(Runnable task, boolean b) {
+        if (b) {
+            getServer().getScheduler().runTaskAsynchronously(this, task);
+        } else {
+            getServer().getScheduler().runTask(this, task);
+        }
+    }
+
     void execute(Runnable task) {
-        getServer().getScheduler().runTaskAsynchronously(this, task);
+        execute(task, true);
     }
 
 }
