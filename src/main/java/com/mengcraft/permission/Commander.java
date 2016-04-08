@@ -157,14 +157,16 @@ class Commander implements CommandExecutor {
                     .gt("outdated", new Timestamp(now()))
                     .findUnique();
             if (fetched == null) {
-                PermissionUser user = new PermissionUser();
-                user.setName(name);
-                user.setValue(value);
-                user.setType(isZone(value));
-                user.setOutdated(new Timestamp(now() + day * DAY_TIME));
-                main.execute(() -> {
-                    db.save(user);
-                });
+                if (day > 0) {
+                    PermissionUser user = new PermissionUser();
+                    user.setName(name);
+                    user.setValue(value);
+                    user.setType(isZone(value));
+                    user.setOutdated(new Timestamp(now() + day * DAY_TIME));
+                    main.execute(() -> {
+                        db.save(user);
+                    });
+                }
                 sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
             } else {
                 fetched.setOutdated(new Timestamp(fetched.getOutdatedTime() + day * DAY_TIME));

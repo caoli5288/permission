@@ -18,7 +18,6 @@ import java.util.Map;
 import static com.mengcraft.permission.Util.cutHead;
 import static com.mengcraft.permission.Util.isWithdraw;
 import static com.mengcraft.permission.Util.now;
-import static java.lang.System.currentTimeMillis;
 
 /**
  * Created on 15-10-20.
