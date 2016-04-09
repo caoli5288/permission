@@ -1,9 +1,10 @@
 package com.mengcraft.permission;
 
+import com.avaje.ebean.EbeanServer;
 import com.mengcraft.permission.entity.Permission;
 import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
-import com.mengcraft.simpleorm.EbeanHandler;
+import com.mengcraft.permission.manager.Fetcher;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -14,9 +15,9 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import static com.mengcraft.permission.Util.cutHead;
-import static com.mengcraft.permission.Util.isZone;
-import static com.mengcraft.permission.Util.now;
+import static com.mengcraft.permission.lib.Util.cutHead;
+import static com.mengcraft.permission.lib.Util.isZone;
+import static com.mengcraft.permission.lib.Util.now;
 
 /**
  * Created on 15-10-20.
@@ -25,12 +26,14 @@ class Commander implements CommandExecutor {
 
     private static final long DAY_TIME = 86400000;
 
-    private final EbeanHandler db;
+    private final EbeanServer db;
     private final Main main;
+    private final Fetcher fetcher;
 
-    Commander(Main main, EbeanHandler db) {
-        this.db = db;
+    Commander(Main main, Fetcher fetcher) {
+        this.db = main.getDatabase();
         this.main = main;
+        this.fetcher = fetcher;
     }
 
     @Override
@@ -81,18 +84,22 @@ class Commander implements CommandExecutor {
             return execute(sender, name, value, it.next());
         } else {
             if (isZone(name)) {
+                String zone = cutHead(name, 1);
                 PermissionZone fetched = db.find(PermissionZone.class)
                         .where()
-                        .eq("name", cutHead(name, 1))
+                        .eq("name", zone)
                         .eq("value", value)
                         .findUnique();
                 if (fetched == null) {
-                    PermissionZone zone = new PermissionZone();
-                    zone.setName(cutHead(name, 1));
-                    zone.setValue(value);
-                    zone.setType(isZone(value));
+                    PermissionZone insert = new PermissionZone();
+                    insert.setName(zone);
+                    insert.setValue(value);
+                    insert.setType(isZone(value));
                     main.execute(() -> {
-                        db.save(zone);
+                        db.save(insert);
+                        main.execute(() -> {
+                            fetcher.add(name, value);
+                        }, false);
                     });
                     sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
                 } else {
@@ -165,6 +172,9 @@ class Commander implements CommandExecutor {
                     user.setOutdated(new Timestamp(now() + day * DAY_TIME));
                     main.execute(() -> {
                         db.save(user);
+                        main.execute(() -> {
+                            fetcher.add(name, value);
+                        }, false);
                     });
                 }
                 sender.sendMessage(ChatColor.GOLD + "Specific operation done!");

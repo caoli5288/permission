@@ -2,6 +2,7 @@ package com.mengcraft.permission;
 
 import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
+import com.mengcraft.permission.manager.Fetcher;
 import com.mengcraft.simpleorm.EbeanHandler;
 import com.mengcraft.simpleorm.EbeanManager;
 import org.bukkit.ChatColor;
@@ -14,15 +15,18 @@ import java.io.File;
  */
 public class Main extends JavaPlugin {
 
+    private boolean offline;
+
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        setOffline(getConfig().getBoolean("offline"));
 
         EbeanHandler db = EbeanManager.DEFAULT.getHandler(this);
         if (!db.isInitialized()) {
             db.define(PermissionUser.class);
             db.define(PermissionZone.class);
-            if (getConfig().getBoolean("offline")) {
+            if (offline) {
                 db.setDriver("org.sqlite.JDBC");
                 db.setUrl("jdbc:sqlite:" + new File(getDataFolder(), "database.db"));
                 db.setUserName("");
@@ -37,10 +41,10 @@ public class Main extends JavaPlugin {
         db.install();
         db.reflect();
 
-        Fetcher fetcher = new Fetcher(this);
+        Fetcher fetcher = new Fetcher(this, db.getServer());
 
-        getServer().getPluginManager().registerEvents(new Executor(fetcher), this);
-        getCommand("permission").setExecutor(new Commander(this, db));
+        getServer().getPluginManager().registerEvents(new Executor(this, fetcher), this);
+        getCommand("permission").setExecutor(new Commander(this, fetcher));
 
         String[] strings = {
                 ChatColor.GREEN + "梦梦家高性能服务器出租店",
@@ -49,7 +53,7 @@ public class Main extends JavaPlugin {
         getServer().getConsoleSender().sendMessage(strings);
     }
 
-    void execute(Runnable task, boolean b) {
+    public void execute(Runnable task, boolean b) {
         if (b) {
             getServer().getScheduler().runTaskAsynchronously(this, task);
         } else {
@@ -57,8 +61,16 @@ public class Main extends JavaPlugin {
         }
     }
 
-    void execute(Runnable task) {
+    public void execute(Runnable task) {
         execute(task, true);
+    }
+
+    public boolean isOffline() {
+        return offline;
+    }
+
+    private void setOffline(boolean offline) {
+        this.offline = offline;
     }
 
 }
