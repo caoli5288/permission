@@ -44,4 +44,13 @@ public class Attachment {
         attachment.remove();
     }
 
+    public void removeZone(String zone) {
+        zoneList.remove(zone);
+    }
+
+    @Override
+    public String toString() {
+        return "zoneList=" + zoneList + ", attachment=" + attachment.getPermissions();
+    }
+
 }

@@ -41,6 +41,10 @@ class Commander implements CommandExecutor {
         Iterator<String> it = Arrays.asList(arguments).iterator();
         if (it.hasNext()) {
             return execute(sender, it.next(), it);
+        } else if (main.isDebug()) {
+            fetcher.fetched().forEach((s, attachment) -> {
+                sender.sendMessage(s + " -> " + attachment);
+            });
         } else {
             sender.sendMessage(ChatColor.DARK_RED + "/permission $name $permission <$day|remove>");
         }
@@ -126,6 +130,9 @@ class Commander implements CommandExecutor {
                 } else {
                     main.execute(() -> {
                         db.delete(fetched);
+                        main.execute(() -> {
+                            fetcher.remove(name, value);
+                        }, false);
                     });
                     sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
                 }
@@ -141,6 +148,9 @@ class Commander implements CommandExecutor {
                 } else {
                     main.execute(() -> {
                         db.delete(fetched);
+                        main.execute(() -> {
+                            fetcher.remove(name, value);
+                        }, false);
                     });
                     sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
                 }

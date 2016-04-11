@@ -26,7 +26,7 @@ class Executor implements Listener {
 
     @EventHandler
     public void handle(PlayerQuitEvent event) {
-        fetcher.drop(event.getPlayer());
+        fetcher.fetched().remove(event.getPlayer());
     }
 
 }

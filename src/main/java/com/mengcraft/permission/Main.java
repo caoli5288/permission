@@ -65,6 +65,10 @@ public class Main extends JavaPlugin {
         execute(task, true);
     }
 
+    public boolean isDebug() {
+        return true;
+    }
+
     public boolean isOffline() {
         return offline;
     }
