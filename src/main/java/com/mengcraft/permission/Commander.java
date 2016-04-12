@@ -41,11 +41,10 @@ class Commander implements CommandExecutor {
         Iterator<String> it = Arrays.asList(arguments).iterator();
         if (it.hasNext()) {
             return execute(sender, it.next(), it);
-        } else if (main.isDebug()) {
-            fetcher.fetched().forEach((s, attachment) -> {
-                sender.sendMessage(s + " -> " + attachment);
-            });
         } else {
+                /*fetcher.fetched().forEach((s, attachment) -> {
+                    sender.sendMessage(s + " -> " + attachment);
+                });*/
             sender.sendMessage(ChatColor.DARK_RED + "/permission $name $permission <$day|remove>");
         }
         return false;

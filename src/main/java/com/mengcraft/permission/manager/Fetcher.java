@@ -1,32 +1,42 @@
 package com.mengcraft.permission.manager;
 
 import com.avaje.ebean.EbeanServer;
+import com.google.common.io.ByteArrayDataInput;
+import com.google.common.io.ByteArrayDataOutput;
 import com.mengcraft.permission.Main;
 import com.mengcraft.permission.entity.Permission;
 import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.messaging.PluginMessageListener;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.google.common.io.ByteStreams.newDataInput;
+import static com.google.common.io.ByteStreams.newDataOutput;
 import static com.mengcraft.permission.lib.Util.cutHead;
 import static com.mengcraft.permission.lib.Util.isWithdraw;
 import static com.mengcraft.permission.lib.Util.isZone;
 import static com.mengcraft.permission.lib.Util.now;
+import static java.util.Arrays.asList;
 
 /**
  * Created on 16-4-8.
  */
-public class Fetcher {
+public class Fetcher implements PluginMessageListener {
 
     private final Map<String, Attachment> fetched = new HashMap<>();
     private final Main main;
     private final EbeanServer db;
+
+    public final static String CHANNEL = "BungeeCord";
+    public final static String CHANNEL_SUB = "Permission";
 
     public Fetcher(Main main, EbeanServer db) {
         this.main = main;
@@ -34,21 +44,28 @@ public class Fetcher {
     }
 
     public void add(String name, String value) {
+        add(name, value, false);
+    }
+
+    private void add(String name, String value, boolean b) {
         if (isZone(value)) {
-            addZone(name, cutHead(value, 1));
+            addZone(name, cutHead(value, 1), b);
         } else {
-            addPerm(name, value);
+            addPerm(name, value, b);
         }
     }
 
-    private void addPerm(String name, String value) {
+    private void addPerm(String name, String value, boolean b) {
         if (isZone(name)) {
             List<String> list = fetchZoned(cutHead(name, 1));
             list.forEach(user -> {
                 addPermToUser(user, value);
             });
+            sendMessage(name, value, 0, b);
         } else if (fetched.containsKey(name)) {
             addPermToUser(name, value);
+        } else {
+            sendMessage(name, value, 0, b);
         }
     }
 
@@ -64,7 +81,7 @@ public class Fetcher {
      * @param name  This maybe a user or zone.
      * @param value The zone name without '@'.
      */
-    private void addZone(String name, String value) {
+    private void addZone(String name, String value, boolean b) {
         if (isZone(name)) {
             List<String> list = fetchZoned(cutHead(name, 1));
             main.execute(() -> {
@@ -80,6 +97,7 @@ public class Fetcher {
                 });
                 main.execute(() -> ensureAdd(list, map), false);
             });
+            sendMessage(name, '@' + value, 0, b);
         } else if (fetched.containsKey(name)) {
             main.execute(() -> {
                 List<PermissionZone> fetched = db.find(PermissionZone.class)
@@ -94,25 +112,34 @@ public class Fetcher {
                 });
                 main.execute(() -> ensureAdd(name, map), false);
             });
+        } else {
+            sendMessage(name, '@' + value, 0, b);
         }
     }
 
     public void remove(String name, String value) {
+        remove(name, value, false);
+    }
+
+    private void remove(String name, String value, boolean b) {
         if (isZone(value)) {
-            removeZone(name, cutHead(value, 1));
+            removeZone(name, cutHead(value, 1), b);
         } else {
-            removePerm(name, value);
+            removePerm(name, value, b);
         }
     }
 
-    private void removePerm(String name, String value) {
+    private void removePerm(String name, String value, boolean b) {
         if (isZone(name)) {
             List<String> list = fetchZoned(cutHead(name, 1));
             for (String user : list) {
                 removePermFromUser(user, value);
             }
+            sendMessage(name, value, 1, b);
         } else if (fetched.containsKey(name)) {
             removePermFromUser(name, value);
+        } else {
+            sendMessage(name, value, 1, b);
         }
     }
 
@@ -120,7 +147,7 @@ public class Fetcher {
         fetched.get(name).removePermission(isWithdraw(value) ? cutHead(value, 1) : value);
     }
 
-    private void removeZone(String name, String value) {
+    private void removeZone(String name, String value, boolean b) {
         if (isZone(name)) {
             List<String> list = fetchZoned(cutHead(name, 1));
             main.execute(() -> {
@@ -136,6 +163,7 @@ public class Fetcher {
                 });
                 main.execute(() -> ensureRemove(list, map), false);
             });
+            sendMessage(name, '@' + value, 1, b);
         } else if (fetched.containsKey(name)) {
             main.execute(() -> {
                 List<PermissionZone> fetched = db.find(PermissionZone.class)
@@ -150,6 +178,8 @@ public class Fetcher {
                 });
                 main.execute(() -> ensureRemove(name, map), false);
             });
+        } else {
+            sendMessage(name, '@' + value, 1, b);
         }
     }
 
@@ -188,6 +218,10 @@ public class Fetcher {
                 fetched.add(user);
             }
         });
+        return fetched;
+    }
+
+    public Map<String, Attachment> fetched() {
         return fetched;
     }
 
@@ -254,8 +288,48 @@ public class Fetcher {
         }
     }
 
-    public Map<String, Attachment> fetched() {
-        return fetched;
+    private void sendMessage(String name, String value, int i, boolean b) {
+        if (!b && !main.isOffline()) {
+            send(name, value, i);
+        }
+    }
+
+    private void send(String name, String value, int b) {
+        Iterator<Player> itr = asList(main.getServer().getOnlinePlayers()).iterator();
+        if (itr.hasNext()) {
+            System.out.println("Send channel. " + (b == 0 ? '+' : '-') + ':' + name + ':' + value);
+            ByteArrayDataOutput buf = newDataOutput();
+            buf.writeUTF("Forward");
+            buf.writeUTF("ALL");
+            buf.writeUTF(CHANNEL_SUB);
+
+            ByteArrayDataOutput sub = newDataOutput();
+            sub.write(b);
+            sub.writeUTF(name);
+            sub.writeUTF(value);
+
+            byte[] payload = sub.toByteArray();
+
+            buf.writeShort(payload.length);
+            buf.write(payload);
+
+            itr.next().sendPluginMessage(main, CHANNEL, buf.toByteArray());
+        } else {
+            main.getLogger().warning("No handled channel sender!");
+        }
+    }
+
+    @Override
+    public void onPluginMessageReceived(String s, Player player, byte[] data) {
+        ByteArrayDataInput buf = newDataInput(data);
+        if (CHANNEL_SUB.equals(buf.readUTF())) {
+            buf.readShort();
+            if (buf.readByte() == 0) {
+                add(buf.readUTF(), buf.readUTF(), true);
+            } else {
+                remove(buf.readUTF(), buf.readUTF(), true);
+            }
+        }
     }
 
 }
