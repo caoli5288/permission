@@ -85,31 +85,15 @@ public class Fetcher implements PluginMessageListener {
         if (isZone(name)) {
             List<String> list = fetchZoned(cutHead(name, 1));
             main.execute(() -> {
-                List<PermissionZone> fetched = db.find(PermissionZone.class)
-                        .where()
-                        .eq("name", value)
-                        .orderBy("type desc")
-                        .findList();
-                Map map = new ConcurrentHashMap();
+                Map<String, Integer> map = fetchZone(value);
                 map.put(value, 2);
-                fetched.forEach(line -> {
-                    attach(map, line);
-                });
                 main.execute(() -> ensureAdd(list, map), false);
             });
             sendMessage(name, '@' + value, 0, b);
         } else if (fetched.containsKey(name)) {
             main.execute(() -> {
-                List<PermissionZone> fetched = db.find(PermissionZone.class)
-                        .where()
-                        .eq("name", value)
-                        .orderBy("type desc")
-                        .findList();
-                Map map = new ConcurrentHashMap();
+                Map<String, Integer> map = fetchZone(value);
                 map.put(value, 2);
-                fetched.forEach(line -> {
-                    attach(map, line);
-                });
                 main.execute(() -> ensureAdd(name, map), false);
             });
         } else {
@@ -151,31 +135,15 @@ public class Fetcher implements PluginMessageListener {
         if (isZone(name)) {
             List<String> list = fetchZoned(cutHead(name, 1));
             main.execute(() -> {
-                List<PermissionZone> fetched = db.find(PermissionZone.class)
-                        .where()
-                        .eq("name", value)
-                        .orderBy("type desc")
-                        .findList();
-                Map map = new ConcurrentHashMap();
+                Map<String, Integer> map = fetchZone(value);
                 map.put(value, 2);
-                fetched.forEach(line -> {
-                    attach(map, line);
-                });
                 main.execute(() -> ensureRemove(list, map), false);
             });
             sendMessage(name, '@' + value, 1, b);
         } else if (fetched.containsKey(name)) {
             main.execute(() -> {
-                List<PermissionZone> fetched = db.find(PermissionZone.class)
-                        .where()
-                        .eq("name", value)
-                        .orderBy("type desc")
-                        .findList();
-                Map map = new ConcurrentHashMap();
+                Map<String, Integer> map = fetchZone(value);
                 map.put(value, 2);
-                fetched.forEach(line -> {
-                    attach(map, line);
-                });
                 main.execute(() -> ensureRemove(name, map), false);
             });
         } else {
@@ -208,10 +176,27 @@ public class Fetcher implements PluginMessageListener {
     }
 
     /**
+     * @param value Zone name without '@' prefix.
+     * @return Fetched permission map.
+     */
+    public Map<String, Integer> fetchZone(String value) {
+        List<PermissionZone> founded = db.find(PermissionZone.class)
+                .where()
+                .eq("name", value)
+                .orderBy("type desc")
+                .findList();
+        Map<String, Integer> fetched = new ConcurrentHashMap<>();
+        founded.forEach(line -> {
+            attach(fetched, line);
+        });
+        return fetched;
+    }
+
+    /**
      * @param zone Zone name without '@' prefix.
      * @return List contains all user has zoned.
      */
-    private List<String> fetchZoned(String zone) {
+    public List<String> fetchZoned(String zone) {
         List<String> fetched = new ArrayList<>();
         this.fetched.forEach((user, attachment) -> {
             if (attachment.hasZone(zone)) {

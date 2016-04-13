@@ -9,6 +9,10 @@ public final class Util {
         return line.substring(head, line.length());
     }
 
+    public static String cutHead(String line) {
+        return cutHead(line, 1);
+    }
+
     public static boolean isZone(String line) {
         return line.charAt(0) == '@';
     }

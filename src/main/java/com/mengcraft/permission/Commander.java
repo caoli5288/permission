@@ -14,7 +14,9 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Level;
 
+import static com.mengcraft.permission.lib.MapUtil.reduce;
 import static com.mengcraft.permission.lib.Util.cutHead;
 import static com.mengcraft.permission.lib.Util.isZone;
 import static com.mengcraft.permission.lib.Util.now;
@@ -84,38 +86,62 @@ class Commander implements CommandExecutor {
 
     private boolean execute(CommandSender sender, String name, String value, Iterator<String> it) {
         if (isZone(name)) {
-            if (name.equals(value)) {
-                sender.sendMessage(ChatColor.DARK_RED + "Self extends not allown!");
-            } else {
-                String zone = cutHead(name, 1);
-                PermissionZone fetched = db.find(PermissionZone.class)
-                        .where()
-                        .eq("name", zone)
-                        .eq("value", value)
-                        .findUnique();
-                if (fetched == null) {
-                    PermissionZone insert = new PermissionZone();
-                    insert.setName(zone);
-                    insert.setValue(value);
-                    insert.setType(isZone(value));
-                    main.execute(() -> {
-                        db.save(insert);
-                        main.execute(() -> {
-                            fetcher.add(name, value);
-                        }, false);
-                    });
-                    sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
-                } else {
-                    sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
-                }
-                return true;
-            }
+            return addToZone(sender, cutHead(name), value);
         } else if (it.hasNext()) {
             return execute(sender, name, value, it.next());
         } else {
             sender.sendMessage(ChatColor.DARK_RED + "You must type a daytime!");
         }
         return false;
+    }
+
+    /**
+     * @param sender The command sender.
+     * @param name   Zone name without prefix.
+     * @param value  A permission or zone.
+     * @return {@code true} if operation ok.
+     */
+    private boolean addToZone(CommandSender sender, String name, String value) {
+        if (isZone(value)) {
+            if (name.equals(cutHead(value)) || isLoop(name, cutHead(value))) {
+                sender.sendMessage(ChatColor.DARK_RED + "Loop extend permissible!");
+            } else {
+                try {
+                    addToZone(sender, name, value, true);
+                } catch (Exception e) {
+                    main.getLogger().log(Level.WARNING, "", e);
+                }
+                return true;
+            }
+        } else {
+            try {
+                addToZone(sender, name, value, false);
+            } catch (Exception e) {
+                main.getLogger().log(Level.WARNING, "", e);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * @param sender The command sender.
+     * @param name   Zone name without prefix.
+     * @param value  A permission or zone.
+     * @param type   {@code true} if zone value.
+     */
+    private void addToZone(CommandSender sender, String name, String value, boolean type) {
+        PermissionZone insert = new PermissionZone();
+        insert.setName(name);
+        insert.setValue(value);
+        insert.setType(type);
+        main.execute(() -> {
+            db.save(insert);
+            main.execute(() -> {
+                fetcher.add('@' + name, value);
+            }, false);
+        });
+        sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
     }
 
     private boolean execute(CommandSender sender, String name, String value, String label) {
@@ -199,6 +225,12 @@ class Commander implements CommandExecutor {
             return true;
         }
         return false;
+    }
+
+    private boolean isLoop(String name, String zone) {
+        return !reduce(fetcher.fetchZone(zone), (k, v) -> {
+            return v.equals(2) && k.equals(name);
+        }).isEmpty();
     }
 
 }
