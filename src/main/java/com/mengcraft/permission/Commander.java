@@ -83,10 +83,10 @@ class Commander implements CommandExecutor {
     }
 
     private boolean execute(CommandSender sender, String name, String value, Iterator<String> it) {
-        if (it.hasNext()) {
-            return execute(sender, name, value, it.next());
-        } else {
-            if (isZone(name)) {
+        if (isZone(name)) {
+            if (name.equals(value)) {
+                sender.sendMessage(ChatColor.DARK_RED + "Self extends not allown!");
+            } else {
                 String zone = cutHead(name, 1);
                 PermissionZone fetched = db.find(PermissionZone.class)
                         .where()
@@ -109,11 +109,13 @@ class Commander implements CommandExecutor {
                     sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
                 }
                 return true;
-            } else {
-                sender.sendMessage(ChatColor.DARK_RED + "You must type a daytime!");
             }
-            return false;
+        } else if (it.hasNext()) {
+            return execute(sender, name, value, it.next());
+        } else {
+            sender.sendMessage(ChatColor.DARK_RED + "You must type a daytime!");
         }
+        return false;
     }
 
     private boolean execute(CommandSender sender, String name, String value, String label) {
