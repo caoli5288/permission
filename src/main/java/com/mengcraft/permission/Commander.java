@@ -5,6 +5,7 @@ import com.mengcraft.permission.entity.Permission;
 import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
 import com.mengcraft.permission.manager.Fetcher;
+import com.mengcraft.simpleorm.EbeanHandler;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -28,13 +29,13 @@ class Commander implements CommandExecutor {
 
     private static final long DAY_TIME = 86400000;
 
-    private final EbeanServer db;
+    private final EbeanHandler db;
     private final Main main;
     private final Fetcher fetcher;
 
-    Commander(Main main, Fetcher fetcher) {
-        this.db = main.getDatabase();
+    Commander(Main main, EbeanHandler db, Fetcher fetcher) {
         this.main = main;
+        this.db = db;
         this.fetcher = fetcher;
     }
 

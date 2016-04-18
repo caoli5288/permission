@@ -7,6 +7,7 @@ import com.mengcraft.permission.Main;
 import com.mengcraft.permission.entity.Permission;
 import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
+import com.mengcraft.simpleorm.EbeanHandler;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
@@ -33,12 +34,12 @@ public class Fetcher implements PluginMessageListener {
 
     private final Map<String, Attachment> fetched = new HashMap<>();
     private final Main main;
-    private final EbeanServer db;
+    private final EbeanHandler db;
 
     public final static String CHANNEL = "BungeeCord";
     public final static String CHANNEL_SUB = "Permission";
 
-    public Fetcher(Main main, EbeanServer db) {
+    public Fetcher(Main main, EbeanHandler db) {
         this.main = main;
         this.db = db;
     }

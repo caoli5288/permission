@@ -11,11 +11,9 @@ import org.bukkit.event.player.PlayerQuitEvent;
  */
 class Executor implements Listener {
 
-    private final Main main;
     private final Fetcher fetcher;
 
-    Executor(Main main, Fetcher fetcher) {
-        this.main = main;
+    Executor(Fetcher fetcher) {
         this.fetcher = fetcher;
     }
 

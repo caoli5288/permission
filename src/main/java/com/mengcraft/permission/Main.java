@@ -41,14 +41,14 @@ public class Main extends JavaPlugin {
         db.install();
         db.reflect();
 
-        Fetcher fetcher = new Fetcher(this, db.getServer());
+        Fetcher fetcher = new Fetcher(this, db);
         if (!offline) {
             getServer().getMessenger().registerIncomingPluginChannel(this, Fetcher.CHANNEL, fetcher);
             getServer().getMessenger().registerOutgoingPluginChannel(this, Fetcher.CHANNEL);
         }
 
-        getServer().getPluginManager().registerEvents(new Executor(this, fetcher), this);
-        getCommand("permission").setExecutor(new Commander(this, fetcher));
+        getServer().getPluginManager().registerEvents(new Executor(fetcher), this);
+        getCommand("permission").setExecutor(new Commander(this, db, fetcher));
 
         String[] strings = {
                 ChatColor.GREEN + "梦梦家高性能服务器出租店",
