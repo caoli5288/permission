@@ -39,7 +39,6 @@ public class Main extends JavaPlugin {
             }
         }
         db.install();
-        db.reflect();
 
         Fetcher fetcher = new Fetcher(this, db);
         if (!offline) {
