@@ -1,6 +1,5 @@
 package com.mengcraft.permission;
 
-import com.avaje.ebean.EbeanServer;
 import com.mengcraft.permission.entity.Permission;
 import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
@@ -45,9 +44,6 @@ class Commander implements CommandExecutor {
         if (it.hasNext()) {
             return execute(sender, it.next(), it);
         } else {
-                /*fetcher.fetched().forEach((s, attachment) -> {
-                    sender.sendMessage(s + " -> " + attachment);
-                });*/
             sender.sendMessage(ChatColor.DARK_RED + "/permission $name $permission <$day|remove>");
         }
         return false;
@@ -86,10 +82,10 @@ class Commander implements CommandExecutor {
     }
 
     private boolean execute(CommandSender sender, String name, String value, Iterator<String> it) {
-        if (isZone(name)) {
-            return addToZone(sender, cutHead(name), value);
-        } else if (it.hasNext()) {
+        if (it.hasNext()) {
             return execute(sender, name, value, it.next());
+        } else if (isZone(name)) {
+            return addToZone(sender, cutHead(name), value);
         } else {
             sender.sendMessage(ChatColor.DARK_RED + "You must type a daytime!");
         }

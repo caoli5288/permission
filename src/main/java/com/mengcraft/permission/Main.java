@@ -49,11 +49,10 @@ public class Main extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new Executor(fetcher), this);
         getCommand("permission").setExecutor(new Commander(this, db, fetcher));
 
-        String[] strings = {
+        getServer().getConsoleSender().sendMessage(new String[]{
                 ChatColor.GREEN + "梦梦家高性能服务器出租店",
                 ChatColor.GREEN + "shop105595113.taobao.com"
-        };
-        getServer().getConsoleSender().sendMessage(strings);
+        });
     }
 
     public void execute(Runnable task, boolean b) {
