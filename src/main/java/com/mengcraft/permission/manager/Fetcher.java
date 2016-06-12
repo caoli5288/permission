@@ -1,6 +1,5 @@
 package com.mengcraft.permission.manager;
 
-import com.avaje.ebean.EbeanServer;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.mengcraft.permission.Main;
