@@ -6,6 +6,8 @@ import com.mengcraft.permission.manager.Fetcher;
 import com.mengcraft.simpleorm.EbeanHandler;
 import com.mengcraft.simpleorm.EbeanManager;
 import org.bukkit.ChatColor;
+import org.bukkit.event.Event;
+import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -47,12 +49,16 @@ public class Main extends JavaPlugin {
         }
 
         getServer().getPluginManager().registerEvents(new Executor(fetcher), this);
-        getCommand("permission").setExecutor(new Commander(this, db, fetcher));
 
-        getServer().getConsoleSender().sendMessage(new String[]{
+        Commander commander = new Commander(this, db, fetcher);
+        getCommand("permission").setExecutor(commander);
+        getServer().getServicesManager().register(Permission.class, commander, this, ServicePriority.Normal);
+
+        String[] author = {
                 ChatColor.GREEN + "梦梦家高性能服务器出租店",
                 ChatColor.GREEN + "shop105595113.taobao.com"
-        });
+        };
+        getServer().getConsoleSender().sendMessage(author);
     }
 
     public void execute(Runnable task, boolean b) {
@@ -75,4 +81,7 @@ public class Main extends JavaPlugin {
         this.offline = offline;
     }
 
+    public void send(Event event) {
+        getServer().getPluginManager().callEvent(event);
+    }
 }

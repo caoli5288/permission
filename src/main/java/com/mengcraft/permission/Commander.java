@@ -1,14 +1,16 @@
 package com.mengcraft.permission;
 
-import com.mengcraft.permission.entity.Permission;
+import com.mengcraft.permission.entity.PermissionMXBean;
 import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
+import com.mengcraft.permission.manager.Attachment;
 import com.mengcraft.permission.manager.Fetcher;
 import com.mengcraft.simpleorm.EbeanHandler;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
 import java.sql.Timestamp;
 import java.util.Arrays;
@@ -24,7 +26,7 @@ import static com.mengcraft.permission.lib.Util.now;
 /**
  * Created on 15-10-20.
  */
-class Commander implements CommandExecutor {
+public class Commander implements CommandExecutor, Permission {
 
     private static final long DAY_TIME = 86400000;
 
@@ -60,7 +62,7 @@ class Commander implements CommandExecutor {
                         .orderBy("type desc")
                         .findList();
                 sender.sendMessage(ChatColor.GOLD + ">>> Permission info of " + name);
-                for (Permission zone : fetched) {
+                for (PermissionMXBean zone : fetched) {
                     sender.sendMessage(ChatColor.GOLD + zone.toString());
                 }
                 sender.sendMessage(ChatColor.GOLD + "<<<");
@@ -72,7 +74,7 @@ class Commander implements CommandExecutor {
                         .orderBy("type desc")
                         .findList();
                 sender.sendMessage(ChatColor.GOLD + ">>> Permission info of " + name);
-                for (Permission zone : fetched) {
+                for (PermissionMXBean zone : fetched) {
                     sender.sendMessage(ChatColor.GOLD + zone.toString());
                 }
                 sender.sendMessage(ChatColor.GOLD + "<<<");
@@ -230,4 +232,23 @@ class Commander implements CommandExecutor {
         }).isEmpty();
     }
 
+    @Override
+    public boolean addPermission(Player p, String permission, int time) {
+        if (!hasPermission(p, permission)) {
+            return execute(main.getServer().getConsoleSender(), p.getName(), Arrays.asList(permission, String.valueOf(time)).iterator());
+        }
+        return false;
+    }
+
+    @Override
+    public boolean hasPermission(Player p, String permission) {
+        if (isZone(permission)) {
+            Attachment attachment = fetcher.fetched().get(p.getName());
+            if (attachment != null) {
+                return attachment.hasZone(cutHead(permission));
+            }
+            return false;
+        }
+        return p.hasPermission(permission);
+    }
 }

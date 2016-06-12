@@ -3,9 +3,10 @@ package com.mengcraft.permission.manager;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.mengcraft.permission.Main;
-import com.mengcraft.permission.entity.Permission;
+import com.mengcraft.permission.entity.PermissionMXBean;
 import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
+import com.mengcraft.permission.event.PermissionFetchedEvent;
 import com.mengcraft.simpleorm.EbeanHandler;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.messaging.PluginMessageListener;
@@ -167,12 +168,13 @@ public class Fetcher implements PluginMessageListener {
         });
     }
 
-    private void fetchWith(Player player, Map<String, Integer> attachMap) {
-        String name = player.getName();
+    private void fetchWith(Player p, Map<String, Integer> attachMap) {
+        String name = p.getName();
         if (fetched.containsKey(name)) {
             fetched.remove(name).removePermission();
         }
-        fetched.put(name, ensureAdd(new Attachment(player.addAttachment(main)), attachMap));
+        fetched.put(name, ensureAdd(new Attachment(p.addAttachment(main)), attachMap));
+        main.send(PermissionFetchedEvent.of(p));
     }
 
     /**
@@ -254,7 +256,7 @@ public class Fetcher implements PluginMessageListener {
         return attachment;
     }
 
-    private void attach(Map<String, Integer> attachMap, Permission perm) {
+    private void attach(Map<String, Integer> attachMap, PermissionMXBean perm) {
         if (perm.isType()) {
             String name = cutHead(perm.getValue(), 1);
             List<PermissionZone> fetched = db.find(PermissionZone.class)
@@ -316,5 +318,4 @@ public class Fetcher implements PluginMessageListener {
             }
         }
     }
-
 }

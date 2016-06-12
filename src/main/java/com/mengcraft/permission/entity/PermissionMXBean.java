@@ -3,7 +3,7 @@ package com.mengcraft.permission.entity;
 /**
  * Created on 16-4-7.
  */
-public interface Permission {
+public interface PermissionMXBean {
 
     String getName();
 

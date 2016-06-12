@@ -13,7 +13,7 @@ import java.text.SimpleDateFormat;
  * Created on 15-10-20.
  */
 @Entity
-public class PermissionUser implements Permission {
+public class PermissionUser implements PermissionMXBean {
 
     @Transient
     private final static SimpleDateFormat FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
