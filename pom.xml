@@ -5,6 +5,13 @@
     <artifactId>permission</artifactId>
     <version>1.4</version>
 
+    <repositories>
+        <repository>
+            <id>bukkit-repo</id>
+            <url>http://repo.md-5.net/content/groups/public/</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>org.bukkit</groupId>
