@@ -208,10 +208,6 @@ public class Fetcher implements PluginMessageListener {
         return fetched;
     }
 
-    public Map<String, Attachment> fetched() {
-        return fetched;
-    }
-
     private void ensureAdd(List<String> list, Map<String, Integer> attachMap) {
         for (String line : list) {
             ensureAdd(line, attachMap);
@@ -317,5 +313,9 @@ public class Fetcher implements PluginMessageListener {
                 remove(buf.readUTF(), buf.readUTF(), true);
             }
         }
+    }
+
+    public Map<String, Attachment> getFetched() {
+        return fetched;
     }
 }
