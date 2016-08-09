@@ -3,6 +3,7 @@ package com.mengcraft.permission;
 import com.mengcraft.permission.entity.PermissionMXBean;
 import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
+import com.mengcraft.permission.lib.It;
 import com.mengcraft.permission.manager.Attachment;
 import com.mengcraft.permission.manager.Fetcher;
 import com.mengcraft.simpleorm.EbeanHandler;
@@ -41,46 +42,58 @@ public class Commander implements CommandExecutor, Permission {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] arguments) {
-        Iterator<String> it = Arrays.asList(arguments).iterator();
+    public boolean onCommand(CommandSender p, Command i, String j, String[] k) {
+        Iterator<String> it = new It<>(k);
         if (it.hasNext()) {
-            return execute(sender, it.next(), it);
-        } else {
-            sender.sendMessage(ChatColor.DARK_RED + "/permission $name $permission <$day|remove>");
+            return execute(p, it.next(), it);
+        } else if (p instanceof Player) {
+            sendTargetInfo(p, p.getName());
+            return true;
         }
         return false;
     }
 
     private boolean execute(CommandSender sender, String name, Iterator<String> it) {
-        if (it.hasNext()) {
-            return execute(sender, name, it.next(), it);
-        } else {
-            if (isZone(name)) {
-                List<PermissionZone> fetched = db.find(PermissionZone.class)
-                        .where()
-                        .eq("name", cutHead(name, 1))
-                        .orderBy("type desc")
-                        .findList();
-                sender.sendMessage(ChatColor.GOLD + ">>> Permission info of " + name);
-                for (PermissionMXBean zone : fetched) {
-                    sender.sendMessage(ChatColor.GOLD + zone.toString());
-                }
-                sender.sendMessage(ChatColor.GOLD + "<<<");
+        if (sender.hasPermission("permission.admin")) {
+            if (it.hasNext()) {
+                return execute(sender, name, it.next(), it);
             } else {
-                List<PermissionUser> fetched = db.find(PermissionUser.class)
-                        .where()
-                        .eq("name", name)
-                        .gt("outdated", new Timestamp(now()))
-                        .orderBy("type desc")
-                        .findList();
-                sender.sendMessage(ChatColor.GOLD + ">>> Permission info of " + name);
-                for (PermissionMXBean zone : fetched) {
-                    sender.sendMessage(ChatColor.GOLD + zone.toString());
+                if (isZone(name)) {
+                    sendTargetZoneInfo(sender, name);
+                } else {
+                    sendTargetInfo(sender, name);
                 }
-                sender.sendMessage(ChatColor.GOLD + "<<<");
             }
             return true;
         }
+        return false;
+    }
+
+    private void sendTargetZoneInfo(CommandSender sender, String name) {
+        List<PermissionZone> fetched = db.find(PermissionZone.class)
+                .where()
+                .eq("name", cutHead(name, 1))
+                .orderBy("type desc")
+                .findList();
+        sender.sendMessage(ChatColor.GOLD + ">>> Permission info of " + name);
+        for (PermissionMXBean zone : fetched) {
+            sender.sendMessage(ChatColor.GOLD + zone.toString());
+        }
+        sender.sendMessage(ChatColor.GOLD + "<<<");
+    }
+
+    private void sendTargetInfo(CommandSender sender, String name) {
+        List<PermissionUser> fetched = db.find(PermissionUser.class)
+                .where()
+                .eq("name", name)
+                .gt("outdated", new Timestamp(now()))
+                .orderBy("type desc")
+                .findList();
+        sender.sendMessage(ChatColor.GOLD + ">>> Permission info of " + name);
+        for (PermissionMXBean zone : fetched) {
+            sender.sendMessage(ChatColor.GOLD + zone.toString());
+        }
+        sender.sendMessage(ChatColor.GOLD + "<<<");
     }
 
     private boolean execute(CommandSender sender, String name, String value, Iterator<String> it) {

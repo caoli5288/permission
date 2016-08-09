@@ -5,11 +5,14 @@ main: com.mengcraft.permission.Main
 commands:
   permission:
     description: Base command for permission manager.
-    permission: permission.admin
+    permission: permission.use
 
 permissions:
+  permission.use:
+    description: Basic usage permission.
+    default: op
   permission.admin:
-    description: Base permission for permission manager.
+    description: Operator permission for permission manager.
     default: op
 
 depend: [SimpleORM]

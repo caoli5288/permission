@@ -22,6 +22,12 @@ This is a light weight permission plugin for bukkit based minecraft server.
 - /permission @default_group xkit.use remove
   - This command remove permission xkit.use from group default_group.
 
+## Permission
+- permission.use
+  - `Basic permission that player can use /permission command query self(suggest not give to everyone).`
+- permission.admin
+  - `Administrator permission.`
+
 ## Feature
 - Player permission expires.
 - Multiple group inherit.
