@@ -3,6 +3,7 @@ package com.mengcraft.permission;
 import com.google.common.collect.ImmutableMap;
 import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
+import lombok.val;
 import org.bukkit.permissions.PermissionAttachment;
 
 import java.util.LinkedList;
@@ -65,13 +66,24 @@ public class Attach {
     }
 
     public Map<String, Attach> unfold() {
-        if ($.nil(subList)) return ImmutableMap.of(value, this);
         ImmutableMap.Builder<String, Attach> b = ImmutableMap.builder();
         b.put(value, this);
-        for (Attach attach : subList) {
-            b.putAll(attach.unfold());
+        if (!$.nil(subList)) {
+            for (Attach attach : subList) {
+                b.putAll(attach.unfold());
+            }
         }
         return b.build();
+    }
+
+    public Attach sub(String key) {
+        if ($.nil(subList)) return null;
+        for (Attach l : subList) {
+            if (l.value.equals(key)) return l;
+            val sub = l.sub(key);
+            if (!$.nil(sub)) return sub;
+        }
+        return null;
     }
 
     public static Attach build(PermissionZone p) {
@@ -81,5 +93,4 @@ public class Attach {
     public static Attach build(PermissionUser p) {
         return new Attach(p.getValue(), p.getOutdatedTime(), $.isZone(p.getValue()) ? new LinkedList<>() : null);
     }
-
 }

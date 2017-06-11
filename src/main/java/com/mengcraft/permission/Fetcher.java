@@ -169,6 +169,22 @@ public class Fetcher implements PluginMessageListener {
         }
     }
 
+    public void fetch(Player p) {
+        main.execute(() -> {
+            val list = db.find(PermissionUser.class)
+                    .where()
+                    .eq("name", p.getName())
+                    .gt("outdated", new Timestamp(now()))
+                    .orderBy("type desc")
+                    .findList();
+
+            val collect = $.collect(list, Attach::build);
+            $.walk(collect, attach -> $.isZone(attach.getValue()), this::process);
+
+            main.run(() -> handle(p, collect));
+        });
+    }
+
     private void process(Attach attach) {
         val list = db.find(PermissionZone.class)
                 .where()
@@ -182,23 +198,7 @@ public class Fetcher implements PluginMessageListener {
         $.walk(collect, a -> $.isZone(a.getValue()), this::process);
     }
 
-    public void fetch(Player p) {
-        main.execute(() -> {
-            val list = db.find(PermissionUser.class)
-                    .where()
-                    .eq("name", p.getName())
-                    .gt("outdated", new Timestamp(now()))
-                    .orderBy("type desc")
-                    .findList();
-
-            val collect = $.collect(list, Attach::build);
-            $.walk(collect, attach -> $.isZone(attach.getValue()), this::process);
-
-            main.run(() -> fetchWith(p, collect));
-        });
-    }
-
-    private void fetchWith(Player p, List<Attach> list) {
+    private void handle(Player p, List<Attach> list) {
         val old = fetched.remove(p.getName());
         if (!$.nil(old)) old.removePermission();
         val attachment = new Attachment(p.addAttachment(main));
@@ -270,7 +270,7 @@ public class Fetcher implements PluginMessageListener {
         remove4fetched(fetched.get(name), attachMap);
     }
 
-    private Attachment remove4fetched(Attachment attachment, Map<String, Integer> attachMap) {
+    private void remove4fetched(Attachment attachment, Map<String, Integer> attachMap) {
         attachMap.forEach((key, value) -> {
             if (value.intValue() == 2) {
                 attachment.removeZone(key);
@@ -278,26 +278,25 @@ public class Fetcher implements PluginMessageListener {
                 attachment.removePermission(key);
             }
         });
-        return attachment;
     }
 
-    private void sendMessage(String name, String value, int i, boolean b) {
+    private void sendMessage(String name, String value, int add, boolean b) {
         if (!b && !main.isOffline()) {
-            send(name, value, i);
+            send(name, value, add);
         }
     }
 
-    private void send(String name, String value, int b) {
+    private void send(String name, String value, int add) {
         val itr = main.getServer().getOnlinePlayers().iterator();
         if (itr.hasNext()) {
-            System.out.println("Send channel. " + (b == 0 ? '+' : '-') + ':' + name + ':' + value);
+            System.out.println("Send channel. " + (add == 0 ? '+' : '-') + ':' + name + ':' + value);
             ByteArrayDataOutput buf = newDataOutput();
             buf.writeUTF("Forward");
             buf.writeUTF("ALL");
             buf.writeUTF(CHANNEL_SUB);
 
             ByteArrayDataOutput sub = newDataOutput();
-            sub.write(b);
+            sub.write(add);
             sub.writeUTF(name);
             sub.writeUTF(value);
 

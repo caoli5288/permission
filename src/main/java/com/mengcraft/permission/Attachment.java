@@ -25,7 +25,7 @@ public class Attachment {
      * @return True if contains the zone.
      */
     public boolean hasZone(String zone) {
-        return handled.containsKey("@" + zone);
+        return !$.nil(look("@" + zone));
     }
 
     public void addPermission(String permission, boolean value) {
@@ -53,6 +53,15 @@ public class Attachment {
     public void removeZone(String zone) {
         val attach = handled.remove("@" + zone);
         if (!$.nil(attach)) attach.cancel(attachment);
+    }
+
+    public Attach look(String key) {
+        if (handled.containsKey(key)) return handled.get(key);
+        for (Attach l : handled.values()) {
+            val sub = l.sub(key);
+            if (!$.nil(sub)) return sub;
+        }
+        return null;
     }
 
     @Override
