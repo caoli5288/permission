@@ -1,5 +1,7 @@
 package com.mengcraft.permission.event;
 
+import lombok.val;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.player.PlayerEvent;
@@ -24,7 +26,9 @@ public class PermissionFetchedEvent extends PlayerEvent {
         return HANDLER_LIST;
     }
 
-    public static PermissionFetchedEvent of(Player p) {
-        return new PermissionFetchedEvent(p);
+    public static PermissionFetchedEvent call(Player p) {
+        val event = new PermissionFetchedEvent(p);
+        Bukkit.getPluginManager().callEvent(event);
+        return event;
     }
 }

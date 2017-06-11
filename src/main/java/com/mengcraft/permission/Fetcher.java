@@ -1,31 +1,29 @@
-package com.mengcraft.permission.manager;
+package com.mengcraft.permission;
 
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
-import com.mengcraft.permission.Main;
 import com.mengcraft.permission.entity.PermissionMXBean;
 import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
 import com.mengcraft.permission.event.PermissionFetchedEvent;
 import com.mengcraft.simpleorm.EbeanHandler;
+import lombok.val;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.google.common.io.ByteStreams.newDataInput;
 import static com.google.common.io.ByteStreams.newDataOutput;
-import static com.mengcraft.permission.lib.Util.cutHead;
-import static com.mengcraft.permission.lib.Util.isWithdraw;
-import static com.mengcraft.permission.lib.Util.isZone;
-import static com.mengcraft.permission.lib.Util.now;
-import static java.util.Arrays.asList;
+import static com.mengcraft.permission.$.cutHead;
+import static com.mengcraft.permission.$.isWithdraw;
+import static com.mengcraft.permission.$.isZone;
+import static com.mengcraft.permission.$.now;
 
 /**
  * Created on 16-4-8.
@@ -58,7 +56,7 @@ public class Fetcher implements PluginMessageListener {
 
     private void addPerm(String name, String value, boolean b) {
         if (isZone(name)) {
-            List<String> list = fetchZoned(cutHead(name, 1));
+            List<String> list = lookZoned(cutHead(name, 1));
             list.forEach(user -> {
                 addPermToUser(user, value);
             });
@@ -84,18 +82,18 @@ public class Fetcher implements PluginMessageListener {
      */
     private void addZone(String name, String value, boolean b) {
         if (isZone(name)) {
-            List<String> list = fetchZoned(cutHead(name, 1));
+            List<String> list = lookZoned(cutHead(name, 1));
             main.execute(() -> {
                 Map<String, Integer> map = fetchZone(value);
                 map.put(value, 2);
-                main.execute(() -> ensureAdd(list, map), false);
+                main.run(() -> add2fetched(list, map));
             });
             sendMessage(name, '@' + value, 0, b);
         } else if (fetched.containsKey(name)) {
             main.execute(() -> {
                 Map<String, Integer> map = fetchZone(value);
                 map.put(value, 2);
-                main.execute(() -> ensureAdd(name, map), false);
+                main.run(() -> add2fetched(name, map));
             });
         } else {
             sendMessage(name, '@' + value, 0, b);
@@ -116,7 +114,7 @@ public class Fetcher implements PluginMessageListener {
 
     private void removePerm(String name, String value, boolean b) {
         if (isZone(name)) {
-            List<String> list = fetchZoned(cutHead(name, 1));
+            List<String> list = lookZoned(cutHead(name, 1));
             for (String user : list) {
                 removePermFromUser(user, value);
             }
@@ -134,47 +132,47 @@ public class Fetcher implements PluginMessageListener {
 
     private void removeZone(String name, String value, boolean b) {
         if (isZone(name)) {
-            List<String> list = fetchZoned(cutHead(name, 1));
+            List<String> list = lookZoned(cutHead(name, 1));
             main.execute(() -> {
                 Map<String, Integer> map = fetchZone(value);
                 map.put(value, 2);
-                main.execute(() -> ensureRemove(list, map), false);
+                main.run(() -> remove4fetched(list, map));
             });
             sendMessage(name, '@' + value, 1, b);
         } else if (fetched.containsKey(name)) {
             main.execute(() -> {
                 Map<String, Integer> map = fetchZone(value);
                 map.put(value, 2);
-                main.execute(() -> ensureRemove(name, map), false);
+                main.run(() -> remove4fetched(name, map));
             });
         } else {
             sendMessage(name, '@' + value, 1, b);
         }
     }
 
-    public void fetch(Player player) {
+    public void fetch(Player p) {
         main.execute(() -> {
-            List<PermissionUser> fetched = db.find(PermissionUser.class)
+            List<PermissionUser> list = db.find(PermissionUser.class)
                     .where()
-                    .eq("name", player.getName())
+                    .eq("name", p.getName())
                     .gt("outdated", new Timestamp(now()))
                     .orderBy("type desc")
                     .findList();
-            Map<String, Integer> attachMap = new ConcurrentHashMap<>();
-            fetched.forEach(line -> {
-                attach(attachMap, line);
+            Map<String, Integer> map = new ConcurrentHashMap<>();
+            list.forEach(line -> {
+                attach(map, line);
             });
-            main.execute(() -> fetchWith(player, attachMap), false);
+            main.run(() -> fetchWith(p, map));
         });
     }
 
-    private void fetchWith(Player p, Map<String, Integer> attachMap) {
+    private void fetchWith(Player p, Map<String, Integer> map) {
         String name = p.getName();
         if (fetched.containsKey(name)) {
             fetched.remove(name).removePermission();
         }
-        fetched.put(name, ensureAdd(new Attachment(p.addAttachment(main)), attachMap));
-        main.send(PermissionFetchedEvent.of(p));
+        fetched.put(name, add2fetched(new Attachment(p.addAttachment(main)), map));
+        PermissionFetchedEvent.call(p);
     }
 
     /**
@@ -198,7 +196,7 @@ public class Fetcher implements PluginMessageListener {
      * @param zone Zone name without '@' prefix.
      * @return List contains all user has zoned.
      */
-    public List<String> fetchZoned(String zone) {
+    public List<String> lookZoned(String zone) {
         List<String> fetched = new ArrayList<>();
         this.fetched.forEach((user, attachment) -> {
             if (attachment.hasZone(zone)) {
@@ -208,17 +206,17 @@ public class Fetcher implements PluginMessageListener {
         return fetched;
     }
 
-    private void ensureAdd(List<String> list, Map<String, Integer> attachMap) {
+    private void add2fetched(List<String> list, Map<String, Integer> attachMap) {
         for (String line : list) {
-            ensureAdd(line, attachMap);
+            add2fetched(line, attachMap);
         }
     }
 
-    private void ensureAdd(String name, Map<String, Integer> attachMap) {
-        ensureAdd(fetched.get(name), attachMap);
+    private void add2fetched(String name, Map<String, Integer> attachMap) {
+        add2fetched(fetched.get(name), attachMap);
     }
 
-    private Attachment ensureAdd(Attachment attachment, Map<String, Integer> attachMap) {
+    private Attachment add2fetched(Attachment attachment, Map<String, Integer> attachMap) {
         attachMap.forEach((key, value) -> {
             if (value.intValue() == 0) {
                 attachment.addPermission(key, false);
@@ -231,17 +229,17 @@ public class Fetcher implements PluginMessageListener {
         return attachment;
     }
 
-    private void ensureRemove(List<String> list, Map<String, Integer> attachMap) {
+    private void remove4fetched(List<String> list, Map<String, Integer> attachMap) {
         for (String line : list) {
-            ensureRemove(line, attachMap);
+            remove4fetched(line, attachMap);
         }
     }
 
-    private void ensureRemove(String name, Map<String, Integer> attachMap) {
-        ensureRemove(fetched.get(name), attachMap);
+    private void remove4fetched(String name, Map<String, Integer> attachMap) {
+        remove4fetched(fetched.get(name), attachMap);
     }
 
-    private Attachment ensureRemove(Attachment attachment, Map<String, Integer> attachMap) {
+    private Attachment remove4fetched(Attachment attachment, Map<String, Integer> attachMap) {
         attachMap.forEach((key, value) -> {
             if (value.intValue() == 2) {
                 attachment.removeZone(key);
@@ -278,7 +276,7 @@ public class Fetcher implements PluginMessageListener {
     }
 
     private void send(String name, String value, int b) {
-        Iterator<Player> itr = asList(main.getServer().getOnlinePlayers()).iterator();
+        val itr = main.getServer().getOnlinePlayers().iterator();
         if (itr.hasNext()) {
             System.out.println("Send channel. " + (b == 0 ? '+' : '-') + ':' + name + ':' + value);
             ByteArrayDataOutput buf = newDataOutput();

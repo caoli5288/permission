@@ -2,7 +2,6 @@ package com.mengcraft.permission;
 
 import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
-import com.mengcraft.permission.manager.Fetcher;
 import com.mengcraft.simpleorm.EbeanHandler;
 import com.mengcraft.simpleorm.EbeanManager;
 import org.bukkit.ChatColor;
@@ -11,6 +10,8 @@ import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 /**
  * Created on 15-10-20.
@@ -61,16 +62,12 @@ public class Main extends JavaPlugin {
         getServer().getConsoleSender().sendMessage(author);
     }
 
-    public void execute(Runnable task, boolean b) {
-        if (b) {
-            getServer().getScheduler().runTaskAsynchronously(this, task);
-        } else {
-            getServer().getScheduler().runTask(this, task);
-        }
+    public Future<Void> execute(Runnable r) {
+        return CompletableFuture.runAsync(r);
     }
 
-    public void execute(Runnable task) {
-        execute(task, true);
+    public int run(Runnable r) {
+        return getServer().getScheduler().runTask(this, r).getTaskId();
     }
 
     public boolean isOffline() {
@@ -81,7 +78,4 @@ public class Main extends JavaPlugin {
         this.offline = offline;
     }
 
-    public void send(Event event) {
-        getServer().getPluginManager().callEvent(event);
-    }
 }

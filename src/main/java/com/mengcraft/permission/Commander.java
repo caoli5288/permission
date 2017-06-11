@@ -3,9 +3,6 @@ package com.mengcraft.permission;
 import com.mengcraft.permission.entity.PermissionMXBean;
 import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
-import com.mengcraft.permission.lib.It;
-import com.mengcraft.permission.manager.Attachment;
-import com.mengcraft.permission.manager.Fetcher;
 import com.mengcraft.simpleorm.EbeanHandler;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -19,10 +16,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 
-import static com.mengcraft.permission.lib.MapUtil.reduce;
-import static com.mengcraft.permission.lib.Util.cutHead;
-import static com.mengcraft.permission.lib.Util.isZone;
-import static com.mengcraft.permission.lib.Util.now;
+import static com.mengcraft.permission.$.cutHead;
+import static com.mengcraft.permission.$.isZone;
+import static com.mengcraft.permission.$.now;
 
 /**
  * Created on 15-10-20.
@@ -42,8 +38,8 @@ public class Commander implements CommandExecutor, Permission {
     }
 
     @Override
-    public boolean onCommand(CommandSender p, Command i, String j, String[] k) {
-        Iterator<String> it = new It<>(k);
+    public boolean onCommand(CommandSender p, Command i, String j, String[] input) {
+        Iterator<String> it = Arrays.asList(input).iterator();
         if (it.hasNext()) {
             return execute(p, it.next(), it);
         } else if (p instanceof Player) {
@@ -75,7 +71,7 @@ public class Commander implements CommandExecutor, Permission {
                 .eq("name", cutHead(name, 1))
                 .orderBy("type desc")
                 .findList();
-        sender.sendMessage(ChatColor.GOLD + ">>> Permission info of " + name);
+        sender.sendMessage(ChatColor.GOLD + ">>> Permission info call " + name);
         for (PermissionMXBean zone : fetched) {
             sender.sendMessage(ChatColor.GOLD + zone.toString());
         }
@@ -89,7 +85,7 @@ public class Commander implements CommandExecutor, Permission {
                 .gt("outdated", new Timestamp(now()))
                 .orderBy("type desc")
                 .findList();
-        sender.sendMessage(ChatColor.GOLD + ">>> Permission info of " + name);
+        sender.sendMessage(ChatColor.GOLD + ">>> Permission info call " + name);
         for (PermissionMXBean zone : fetched) {
             sender.sendMessage(ChatColor.GOLD + zone.toString());
         }
@@ -149,9 +145,7 @@ public class Commander implements CommandExecutor, Permission {
         insert.setType(type);
         main.execute(() -> {
             db.save(insert);
-            main.execute(() -> {
-                fetcher.add('@' + name, value);
-            }, false);
+            main.run(() -> fetcher.add('@' + name, value));
         });
         sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
     }
@@ -169,9 +163,7 @@ public class Commander implements CommandExecutor, Permission {
                 } else {
                     main.execute(() -> {
                         db.delete(fetched);
-                        main.execute(() -> {
-                            fetcher.remove(name, value);
-                        }, false);
+                        main.run(() -> fetcher.remove(name, value));
                     });
                     sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
                 }
@@ -187,9 +179,7 @@ public class Commander implements CommandExecutor, Permission {
                 } else {
                     main.execute(() -> {
                         db.delete(fetched);
-                        main.execute(() -> {
-                            fetcher.remove(name, value);
-                        }, false);
+                        main.run(() -> fetcher.remove(name, value));
                     });
                     sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
                 }
@@ -221,9 +211,7 @@ public class Commander implements CommandExecutor, Permission {
                     user.setOutdated(new Timestamp(now() + day * DAY_TIME));
                     main.execute(() -> {
                         db.save(user);
-                        main.execute(() -> {
-                            fetcher.add(name, value);
-                        }, false);
+                        main.run(() -> fetcher.add(name, value));
                     });
                 }
                 sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
@@ -240,9 +228,7 @@ public class Commander implements CommandExecutor, Permission {
     }
 
     private boolean isLoop(String name, String zone) {
-        return !reduce(fetcher.fetchZone(zone), (k, v) -> {
-            return v.equals(2) && k.equals(name);
-        }).isEmpty();
+        return !$.reduce(fetcher.fetchZone(zone), (k, v) -> v.equals(2) && k.equals(name)).isEmpty();
     }
 
     @Override

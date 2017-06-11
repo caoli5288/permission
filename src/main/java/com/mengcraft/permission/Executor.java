@@ -1,6 +1,5 @@
 package com.mengcraft.permission;
 
-import com.mengcraft.permission.manager.Fetcher;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;

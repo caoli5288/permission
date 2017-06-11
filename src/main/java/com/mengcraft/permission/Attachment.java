@@ -1,4 +1,4 @@
-package com.mengcraft.permission.manager;
+package com.mengcraft.permission;
 
 import org.bukkit.permissions.PermissionAttachment;
 

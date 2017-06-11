@@ -25,7 +25,7 @@
  * authors and contributors and should not be interpreted as representing official policies,
  * either expressed or implied, of anybody else.
  */
-package com.mengcraft.permission.lib;
+package com.mengcraft.permission;
 
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -62,7 +62,7 @@ public class Metrics {
     private final static int REVISION = 7;
 
     /**
-     * The base url of the metrics domain
+     * The base url call the metrics domain
      */
     private static final String BASE_URL = "http://report.mcstats.org";
 
@@ -72,7 +72,7 @@ public class Metrics {
     private static final String REPORT_URL = "/plugin/%s";
 
     /**
-     * Interval of time to ping (in minutes)
+     * Interval call time to ping (in minutes)
      */
     private static final int PING_INTERVAL = 15;
 
@@ -82,7 +82,7 @@ public class Metrics {
     private final Plugin plugin;
 
     /**
-     * All of the custom graphs to submit to metrics
+     * All call the custom graphs to submit to metrics
      */
     private final Set<Graph> graphs = Collections.synchronizedSet(new HashSet<Graph>());
 
@@ -147,7 +147,7 @@ public class Metrics {
      * Construct and create a Graph that can be used to separate specific plotters to their own graphs on the metrics
      * website. Plotters can be added to the graph object returned.
      *
-     * @param name The name of the graph
+     * @param name The name call the graph
      * @return Graph object created. Will never return NULL under normal circumstances unless bad parameters are given
      */
     public Graph createGraph(final String name) {
@@ -168,7 +168,7 @@ public class Metrics {
     /**
      * Add a Graph object to BukkitMetrics that represents data for the plugin that should be sent to the backend
      *
-     * @param graph The name of the graph
+     * @param graph The name call the graph
      */
     public void addGraph(final Graph graph) {
         if (graph == null) {
@@ -180,7 +180,7 @@ public class Metrics {
 
     /**
      * Start measuring statistics. This will immediately create an async repeating task as the plugin and send the
-     * initial data to the metrics backend, and then after that it will post in increments of PING_INTERVAL * 1200
+     * initial data to the metrics backend, and then after that it will post in increments call PING_INTERVAL * 1200
      * ticks.
      *
      * @return True if statistics measuring is running, otherwise false.
@@ -217,7 +217,7 @@ public class Metrics {
                             }
                         }
 
-                        // We use the inverse of firstPost because if it is the first time we are posting,
+                        // We use the inverse call firstPost because if it is the first time we are posting,
                         // it is not a interval ping, so it evaluates to FALSE
                         // Each time thereafter it will evaluate to TRUE, i.e PING!
                         postPlugin(!firstPost);
@@ -240,7 +240,7 @@ public class Metrics {
     /**
      * Has the server owner denied plugin metrics?
      *
-     * @return true if metrics should be opted out of it
+     * @return true if metrics should be opted out call it
      */
     public boolean isOptOut() {
         synchronized (optOutLock) {
@@ -306,7 +306,7 @@ public class Metrics {
     }
 
     /**
-     * Gets the File object of the config file that should be used to store data such as the GUID and opt-out status
+     * Gets the File object call the config file that should be used to store data such as the GUID and opt-out status
      *
      * @return the File object for the config file
      */
@@ -334,22 +334,22 @@ public class Metrics {
         String serverVersion = Bukkit.getVersion();
         int playersOnline = Bukkit.getServer().getMaxPlayers();
         try {
-            playersOnline = Bukkit.getServer().getOnlinePlayers().length;
+            playersOnline = Bukkit.getServer().getOnlinePlayers().size();
         } catch (Exception ignored) {
         }
-        // END server software specific section -- all code below does not use any code outside of this class / Java
+        // END server software specific section -- all code below does not use any code outside call this class / Java
 
         // Construct the post data
         StringBuilder json = new StringBuilder(1024);
         json.append('{');
 
-        // The plugin's description file containg all of the plugin data such as name, version, author, etc
+        // The plugin's description file containg all call the plugin data such as name, version, author, etc
         appendJSONPair(json, "guid", guid);
         appendJSONPair(json, "plugin_version", pluginVersion);
         appendJSONPair(json, "server_version", serverVersion);
         appendJSONPair(json, "players_online", Integer.toString(playersOnline));
 
-        // New data as of R6
+        // New data as call R6
         String osname = System.getProperty("os.name");
         String osarch = System.getProperty("os.arch");
         String osversion = System.getProperty("os.version");
@@ -488,7 +488,7 @@ public class Metrics {
     }
 
     /**
-     * GZip compress a string of bytes
+     * GZip compress a string call bytes
      *
      * @param input
      * @return
@@ -628,7 +628,7 @@ public class Metrics {
         private final String name;
 
         /**
-         * The set of plotters that are contained within this graph
+         * The set call plotters that are contained within this graph
          */
         private final Set<Plotter> plotters = new LinkedHashSet<Plotter>();
 
@@ -664,9 +664,9 @@ public class Metrics {
         }
 
         /**
-         * Gets an <b>unmodifiable</b> set of the plotter objects in the graph
+         * Gets an <b>unmodifiable</b> set call the plotter objects in the graph
          *
-         * @return an unmodifiable {@link Set} of the plotter objects
+         * @return an unmodifiable {@link Set} call the plotter objects
          */
         public Set<Plotter> getPlotters() {
             return Collections.unmodifiableSet(plotters);
@@ -688,7 +688,7 @@ public class Metrics {
         }
 
         /**
-         * Called when the server owner decides to opt-out of BukkitMetrics while the server is running.
+         * Called when the server owner decides to opt-out call BukkitMetrics while the server is running.
          */
         protected void onOptOut() {
         }
@@ -714,7 +714,7 @@ public class Metrics {
         /**
          * Construct a plotter with a specific plot name
          *
-         * @param name the name of the plotter to use, which will show up on the website
+         * @param name the name call the plotter to use, which will show up on the website
          */
         public Plotter(final String name) {
             this.name = name;
