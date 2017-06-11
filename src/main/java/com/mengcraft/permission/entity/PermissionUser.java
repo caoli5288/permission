@@ -5,18 +5,13 @@ import com.avaje.ebean.annotation.CreatedTimestamp;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.Transient;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 
 /**
  * Created on 15-10-20.
  */
 @Entity
 public class PermissionUser implements PermissionMXBean {
-
-    @Transient
-    private final static SimpleDateFormat FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     @Id
     private int id;
@@ -26,9 +21,6 @@ public class PermissionUser implements PermissionMXBean {
 
     @Column
     private String value;
-
-    @Column
-    private boolean type;
 
     @Column
     private Timestamp outdated;
@@ -60,14 +52,6 @@ public class PermissionUser implements PermissionMXBean {
         this.value = value;
     }
 
-    public boolean isType() {
-        return type;
-    }
-
-    public void setType(boolean type) {
-        this.type = type;
-    }
-
     public Timestamp getOutdated() {
         return outdated;
     }
@@ -86,7 +70,7 @@ public class PermissionUser implements PermissionMXBean {
 
     @Override
     public String toString() {
-        return "value='" + value + '\'' + ", outdated='" + FORMAT.format(outdated) + '\'';
+        return "value='" + getValue() + '\'' + ", outdated='" + getOutdated() + '\'';
     }
 
     public long getOutdatedTime() {

@@ -116,17 +116,17 @@ public class Fetcher implements PluginMessageListener {
         if (isZone(name)) {
             List<String> list = lookZoned(cutHead(name, 1));
             for (String user : list) {
-                removePermFromUser(user, value);
+                removePerm4User(user, value);
             }
             sendMessage(name, value, 1, b);
         } else if (fetched.containsKey(name)) {
-            removePermFromUser(name, value);
+            removePerm4User(name, value);
         } else {
             sendMessage(name, value, 1, b);
         }
     }
 
-    private void removePermFromUser(String name, String value) {
+    private void removePerm4User(String name, String value) {
         fetched.get(name).removePermission(isWithdraw(value) ? cutHead(value, 1) : value);
     }
 
@@ -150,28 +150,60 @@ public class Fetcher implements PluginMessageListener {
         }
     }
 
+    private void attach(Map<String, Integer> attachMap, PermissionMXBean perm) {
+        if ($.isZone(perm.getValue())) {
+            String name = cutHead(perm.getValue(), 1);
+            List<PermissionZone> fetched = db.find(PermissionZone.class)
+                    .where()
+                    .eq("name", name)
+                    .orderBy("type desc")
+                    .findList();
+            fetched.forEach(line -> {
+                attach(attachMap, line);
+            });
+            attachMap.put(name, 2);
+        } else if (isWithdraw(perm.getValue())) {
+            attachMap.put(cutHead(perm.getValue(), 1), 0);
+        } else {
+            attachMap.put(perm.getValue(), 1);
+        }
+    }
+
+    private void process(Attach attach) {
+        val list = db.find(PermissionZone.class)
+                .where()
+                .eq("name", $.cutHead(attach.getValue()))
+                .orderBy("type desc")
+                .findList();
+
+        val collect = $.collect(list, Attach::build);
+        attach.getSubList().addAll(collect);
+
+        $.walk(collect, a -> $.isZone(a.getValue()), this::process);
+    }
+
     public void fetch(Player p) {
         main.execute(() -> {
-            List<PermissionUser> list = db.find(PermissionUser.class)
+            val list = db.find(PermissionUser.class)
                     .where()
                     .eq("name", p.getName())
                     .gt("outdated", new Timestamp(now()))
                     .orderBy("type desc")
                     .findList();
-            Map<String, Integer> map = new ConcurrentHashMap<>();
-            list.forEach(line -> {
-                attach(map, line);
-            });
-            main.run(() -> fetchWith(p, map));
+
+            val collect = $.collect(list, Attach::build);
+            $.walk(collect, attach -> $.isZone(attach.getValue()), this::process);
+
+            main.run(() -> fetchWith(p, collect));
         });
     }
 
-    private void fetchWith(Player p, Map<String, Integer> map) {
-        String name = p.getName();
-        if (fetched.containsKey(name)) {
-            fetched.remove(name).removePermission();
-        }
-        fetched.put(name, add2fetched(new Attachment(p.addAttachment(main)), map));
+    private void fetchWith(Player p, List<Attach> list) {
+        val old = fetched.remove(p.getName());
+        if (!$.nil(old)) old.removePermission();
+        val attachment = new Attachment(p.addAttachment(main));
+        attachment.handle(list);
+        fetched.put(p.getName(), attachment);
         PermissionFetchedEvent.call(p);
     }
 
@@ -196,14 +228,14 @@ public class Fetcher implements PluginMessageListener {
      * @param zone Zone name without '@' prefix.
      * @return List contains all user has zoned.
      */
-    public List<String> lookZoned(String zone) {
-        List<String> fetched = new ArrayList<>();
-        this.fetched.forEach((user, attachment) -> {
+    private List<String> lookZoned(String zone) {
+        List<String> out = new ArrayList<>();
+        fetched.forEach((who, attachment) -> {
             if (attachment.hasZone(zone)) {
-                fetched.add(user);
+                out.add(who);
             }
         });
-        return fetched;
+        return out;
     }
 
     private void add2fetched(List<String> list, Map<String, Integer> attachMap) {
@@ -216,17 +248,16 @@ public class Fetcher implements PluginMessageListener {
         add2fetched(fetched.get(name), attachMap);
     }
 
-    private Attachment add2fetched(Attachment attachment, Map<String, Integer> attachMap) {
+    private void add2fetched(Attachment attachment, Map<String, Integer> attachMap) {
         attachMap.forEach((key, value) -> {
             if (value.intValue() == 0) {
                 attachment.addPermission(key, false);
             } else if (value.intValue() == 1) {
                 attachment.addPermission(key, true);
             } else {
-                attachment.addZone(key);
+//                attachment.addZone(key);
             }
         });
-        return attachment;
     }
 
     private void remove4fetched(List<String> list, Map<String, Integer> attachMap) {
@@ -248,25 +279,6 @@ public class Fetcher implements PluginMessageListener {
             }
         });
         return attachment;
-    }
-
-    private void attach(Map<String, Integer> attachMap, PermissionMXBean perm) {
-        if (perm.isType()) {
-            String name = cutHead(perm.getValue(), 1);
-            List<PermissionZone> fetched = db.find(PermissionZone.class)
-                    .where()
-                    .eq("name", name)
-                    .orderBy("type desc")
-                    .findList();
-            fetched.forEach(line -> {
-                attach(attachMap, line);
-            });
-            attachMap.put(name, 2);
-        } else if (isWithdraw(perm.getValue())) {
-            attachMap.put(cutHead(perm.getValue(), 1), 0);
-        } else {
-            attachMap.put(perm.getValue(), 1);
-        }
     }
 
     private void sendMessage(String name, String value, int i, boolean b) {

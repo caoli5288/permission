@@ -19,9 +19,6 @@ public class PermissionZone implements PermissionMXBean {
     @Column
     private String value;
 
-    @Column
-    private boolean type;
-
     public int getId() {
         return id;
     }
@@ -44,14 +41,6 @@ public class PermissionZone implements PermissionMXBean {
 
     public void setValue(String value) {
         this.value = value;
-    }
-
-    public boolean isType() {
-        return type;
-    }
-
-    public void setType(boolean type) {
-        this.type = type;
     }
 
     @Override

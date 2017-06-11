@@ -142,7 +142,6 @@ public class Commander implements CommandExecutor, Permission {
         PermissionZone insert = new PermissionZone();
         insert.setName(name);
         insert.setValue(value);
-        insert.setType(type);
         main.execute(() -> {
             db.save(insert);
             main.run(() -> fetcher.add('@' + name, value));
@@ -151,7 +150,7 @@ public class Commander implements CommandExecutor, Permission {
     }
 
     private boolean execute(CommandSender sender, String name, String value, String label) {
-        if (label.equals("remove")) {
+        if (label.equals("cancel")) {
             if (isZone(name)) {
                 PermissionZone fetched = db.find(PermissionZone.class)
                         .where()
@@ -192,7 +191,7 @@ public class Commander implements CommandExecutor, Permission {
 
     private boolean execute(CommandSender sender, String name, String value, long day) {
         if (isZone(name)) {
-            sender.sendMessage(ChatColor.DARK_RED + "Operation except remove!");
+            sender.sendMessage(ChatColor.DARK_RED + "Operation except cancel!");
         } else if (day == 0) {
             sender.sendMessage(ChatColor.DARK_RED + "Daytime can not be zero!");
         } else {
@@ -207,7 +206,6 @@ public class Commander implements CommandExecutor, Permission {
                     PermissionUser user = new PermissionUser();
                     user.setName(name);
                     user.setValue(value);
-                    user.setType(isZone(value));
                     user.setOutdated(new Timestamp(now() + day * DAY_TIME));
                     main.execute(() -> {
                         db.save(user);
@@ -217,9 +215,7 @@ public class Commander implements CommandExecutor, Permission {
                 sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
             } else {
                 fetched.setOutdated(new Timestamp(fetched.getOutdatedTime() + day * DAY_TIME));
-                main.execute(() -> {
-                    db.save(fetched);
-                });
+                main.execute(() -> db.save(fetched));
                 sender.sendMessage(ChatColor.GOLD + "Increased outdated done!");
             }
             return true;
@@ -233,20 +229,14 @@ public class Commander implements CommandExecutor, Permission {
 
     @Override
     public boolean addPermission(Player p, String permission, int time) {
-        if (!hasPermission(p, permission)) {
-            return execute(main.getServer().getConsoleSender(), p.getName(), Arrays.asList(permission, String.valueOf(time)).iterator());
-        }
-        return false;
+        return !hasPermission(p, permission) && execute(main.getServer().getConsoleSender(), p.getName(), Arrays.asList(permission, String.valueOf(time)).iterator());
     }
 
     @Override
     public boolean hasPermission(Player p, String permission) {
         if (isZone(permission)) {
             Attachment attachment = fetcher.getFetched().get(p.getName());
-            if (attachment != null) {
-                return attachment.hasZone(cutHead(permission));
-            }
-            return false;
+            return !$.nil(attachment) && attachment.hasZone(cutHead(permission));
         }
         return p.hasPermission(permission);
     }

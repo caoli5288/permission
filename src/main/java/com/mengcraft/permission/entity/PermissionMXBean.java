@@ -8,7 +8,4 @@ public interface PermissionMXBean {
     String getName();
 
     String getValue();
-
-    boolean isType();
-
 }
