@@ -5,6 +5,7 @@ import com.mengcraft.permission.entity.PermissionZone;
 import lombok.val;
 import org.bukkit.permissions.PermissionAttachment;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -63,20 +64,35 @@ public class Attach {
         }
     }
 
-    public Pair<Attach, Attach> look(String key) {
+    public Pair<Attach, Attach> lookSub(String key) {
         if ($.nil(sublist)) return null;
         for (Attach l : sublist) {
             if (l.value.equals(key)) return Pair.of(this, l);
-            val sub = l.look(key);
+            val sub = l.lookSub(key);
             if (!$.nil(sub)) return sub;
         }
         return null;
     }
 
-    public void removeSub(String key) {
-        if (!$.nil(sublist)) {
-            sublist.removeIf(attach -> attach.value.equals(key));
+    public Attach removeSub(String key) {
+        if ($.nil(sublist)) return null;
+        val i = sublist.iterator();
+        while (i.hasNext()) {
+            val attach = i.next();
+            if (attach.value.equals(key)) {
+                i.remove();
+                return attach;
+            }
         }
+        return null;
+    }
+
+    protected Attach mirror() {
+        return new Attach(value, outdated, new ArrayList<>(sublist));
+    }
+
+    public static Attach build(String value, long outdated) {
+        return new Attach(value, outdated, $.isZone(value) ? new LinkedList<>() : null);
     }
 
     public static Attach build(PermissionZone p) {

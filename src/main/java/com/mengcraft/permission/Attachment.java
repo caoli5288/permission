@@ -30,10 +30,6 @@ public class Attachment {
         return !$.nil(look("@" + zone, depth));
     }
 
-    public void addPermission(String permission, boolean value) {
-        attachment.setPermission(permission, value);
-    }
-
     public void removePermission(String permission) {
         val attach = handled.remove(permission);
         if (!$.nil(attach)) attach.cancel(attachment);
@@ -52,27 +48,19 @@ public class Attachment {
         list.forEach(this::handle);
     }
 
-    public void removeZone(String zone, boolean depth) {
-        val look = look("@" + zone, depth);
-        if (!$.nil(look)) {
-            look.getValue().cancel(attachment);
-            if ($.nil(look.getKey())) {
-                handled.remove("@" + zone);
-            } else {
-                look.getKey().removeSub("@" + zone);
-            }
-        }
-    }
-
     public Pair<Attach, Attach> look(String key, boolean depth) {
         if (handled.containsKey(key)) return Pair.of(null, handled.get(key));
         if (depth) {
             for (Attach l : handled.values()) {
-                val sub = l.look(key);
+                val sub = l.lookSub(key);
                 if (!$.nil(sub)) return sub;
             }
         }
         return null;
+    }
+
+    public PermissionAttachment getAttachment() {
+        return attachment;
     }
 
     public void cleanup() {

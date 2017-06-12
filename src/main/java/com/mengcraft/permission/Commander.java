@@ -114,7 +114,7 @@ public class Commander implements CommandExecutor, Permission {
      */
     private boolean addToZone(CommandSender sender, String name, String value) {
         if (isZone(value)) {
-            if (name.equals(cutHead(value)) || isLoop(name, cutHead(value))) {
+            if (name.equals(cutHead(value)) || isLoop(name, value)) {
                 sender.sendMessage(ChatColor.DARK_RED + "Loop extend permissible!");
             } else {
                 try {
@@ -147,7 +147,7 @@ public class Commander implements CommandExecutor, Permission {
         insert.setValue(value);
         main.execute(() -> {
             db.save(insert);
-            main.run(() -> fetcher.add('@' + name, value));
+            main.run(() -> fetcher.add('@' + name, value, -1));
         });
         sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
     }
@@ -217,12 +217,13 @@ public class Commander implements CommandExecutor, Permission {
                     }
                     main.execute(() -> {
                         db.save(user);
-                        main.run(() -> fetcher.add(name, value));
+                        main.run(() -> fetcher.add(name, value, user.getOutdatedTime()));
                     });
                 }
                 sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
             } else {
                 fetched.setOutdated(new Timestamp(fetched.getOutdatedTime() + day * DAY_TIME));
+                fetcher.add(name, value, fetched.getOutdatedTime());
                 main.execute(() -> db.save(fetched));
                 sender.sendMessage(ChatColor.GOLD + "Increased outdated done!");
             }
@@ -232,7 +233,9 @@ public class Commander implements CommandExecutor, Permission {
     }
 
     private boolean isLoop(String name, String zone) {
-        return !$.reduce(fetcher.fetchZone(zone), (k, v) -> v.equals(2) && k.equals(name)).isEmpty();
+        val attach = Attach.build(zone, -1);
+        fetcher.fetchZone(attach);
+        return !$.nil(attach.lookSub("@" + name));
     }
 
     @Override

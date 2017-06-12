@@ -2,7 +2,6 @@ package com.mengcraft.permission;
 
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
-import com.mengcraft.permission.entity.PermissionMXBean;
 import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
 import com.mengcraft.permission.event.PermissionFetchedEvent;
@@ -12,17 +11,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static com.google.common.io.ByteStreams.newDataInput;
 import static com.google.common.io.ByteStreams.newDataOutput;
-import static com.mengcraft.permission.$.cutHead;
-import static com.mengcraft.permission.$.isWithdraw;
-import static com.mengcraft.permission.$.isZone;
 import static com.mengcraft.permission.$.now;
 
 /**
@@ -42,62 +36,38 @@ public class Fetcher implements PluginMessageListener, Runnable {
         this.db = db;
     }
 
-    public void add(String name, String value) {
-        add(name, value, false);
+    public void add(String name, String value, long outdated) {
+        add(name, value, outdated, false);
     }
 
-    private void add(String name, String value, boolean b) {
-        if (isZone(value)) {
-            addZone(name, cutHead(value, 1), b);
+    private void add(String name, String value, long outdated, boolean b) {
+        if ($.isZone(name)) {
+            addToZone(name, value);
         } else {
-            addPerm(name, value, b);
+            val attachment = fetched.get(name);
+            if (!$.nil(attachment)) {
+                val attach = Attach.build(value, outdated);
+                if ($.isZone(value)) {
+                    fetchZone(attach);
+                }
+                attachment.handle(attach);
+            }
         }
+        sendMessage(name, value, outdated, true, b);
     }
 
-    private void addPerm(String name, String value, boolean b) {
-        if (isZone(name)) {
-            List<String> list = lookZoned(cutHead(name, 1));
-            list.forEach(user -> {
-                addPermToUser(user, value);
-            });
-            sendMessage(name, value, 0, b);
-        } else if (fetched.containsKey(name)) {
-            addPermToUser(name, value);
-        } else {
-            sendMessage(name, value, 0, b);
+    private void addToZone(String name, String value) {
+        val attach = Attach.build(value, -1);
+        if ($.isZone(value)) {
+            fetchZone(attach);
         }
-    }
-
-    private void addPermToUser(String name, String value) {
-        if (isWithdraw(value)) {
-            fetched.get(name).addPermission(cutHead(value, 1), false);
-        } else {
-            fetched.get(name).addPermission(value, true);
-        }
-    }
-
-    /**
-     * @param name  This maybe a user or zone.
-     * @param value The zone name without '@'.
-     */
-    private void addZone(String name, String value, boolean b) {
-        if (isZone(name)) {
-            List<String> list = lookZoned(cutHead(name, 1));
-            main.execute(() -> {
-                Map<String, Integer> map = fetchZone(value);
-                map.put(value, 2);
-                main.run(() -> add2fetched(list, map));
-            });
-            sendMessage(name, '@' + value, 0, b);
-        } else if (fetched.containsKey(name)) {
-            main.execute(() -> {
-                Map<String, Integer> map = fetchZone(value);
-                map.put(value, 2);
-                main.run(() -> add2fetched(name, map));
-            });
-        } else {
-            sendMessage(name, '@' + value, 0, b);
-        }
+        $.walk(fetched, (k, v) -> {
+            val look = v.look(name, true);
+            if (!$.nil(look)) {
+                look.getValue().getSublist().add(attach.mirror());
+                look.getValue().handle(v.getAttachment());
+            }
+        });
     }
 
     public void remove(String name, String value) {
@@ -105,68 +75,27 @@ public class Fetcher implements PluginMessageListener, Runnable {
     }
 
     private void remove(String name, String value, boolean b) {
-        if (isZone(value)) {
-            removeZone(name, cutHead(value, 1), b);
+        if ($.isZone(name)) {
+            remove4Zone(name, value);
         } else {
-            removePerm(name, value, b);
-        }
-    }
-
-    private void removePerm(String name, String value, boolean b) {
-        if (isZone(name)) {
-            List<String> list = lookZoned(cutHead(name, 1));
-            for (String user : list) {
-                removePerm4User(user, value);
+            val attachment = fetched.get(name);
+            if (!$.nil(attachment)) {
+                attachment.removePermission(value);
             }
-            sendMessage(name, value, 1, b);
-        } else if (fetched.containsKey(name)) {
-            removePerm4User(name, value);
-        } else {
-            sendMessage(name, value, 1, b);
         }
+        sendMessage(name, value, -1, false, b);
     }
 
-    private void removePerm4User(String name, String value) {
-        fetched.get(name).removePermission(isWithdraw(value) ? cutHead(value, 1) : value);
-    }
-
-    private void removeZone(String name, String value, boolean b) {
-        if (isZone(name)) {
-            List<String> list = lookZoned(cutHead(name, 1));
-            main.execute(() -> {
-                Map<String, Integer> map = fetchZone(value);
-                map.put(value, 2);
-                main.run(() -> remove4fetched(list, map));
-            });
-            sendMessage(name, '@' + value, 1, b);
-        } else if (fetched.containsKey(name)) {
-            main.execute(() -> {
-                Map<String, Integer> map = fetchZone(value);
-                map.put(value, 2);
-                main.run(() -> remove4fetched(name, map));
-            });
-        } else {
-            sendMessage(name, '@' + value, 1, b);
-        }
-    }
-
-    private void attach(Map<String, Integer> attachMap, PermissionMXBean perm) {
-        if ($.isZone(perm.getValue())) {
-            String name = cutHead(perm.getValue(), 1);
-            List<PermissionZone> fetched = db.find(PermissionZone.class)
-                    .where()
-                    .eq("name", name)
-                    .orderBy("type desc")
-                    .findList();
-            fetched.forEach(line -> {
-                attach(attachMap, line);
-            });
-            attachMap.put(name, 2);
-        } else if (isWithdraw(perm.getValue())) {
-            attachMap.put(cutHead(perm.getValue(), 1), 0);
-        } else {
-            attachMap.put(perm.getValue(), 1);
-        }
+    private void remove4Zone(String name, String value) {
+        $.walk(fetched, (k, v) -> {
+            val look = v.look(name, true);
+            if (!$.nil(look)) {
+                val sub = look.getValue().removeSub(value);
+                if (!$.nil(sub)) {
+                    sub.cancel(v.getAttachment());
+                }
+            }
+        });
     }
 
     public void fetch(Player p) {
@@ -179,13 +108,13 @@ public class Fetcher implements PluginMessageListener, Runnable {
                     .findList();
 
             val collect = $.map(list, Attach::build);
-            $.walk(collect, attach -> $.isZone(attach.getValue()), this::process);
+            $.walk(collect, attach -> $.isZone(attach.getValue()), this::fetchZone);
 
             main.run(() -> handle(p, collect));
         });
     }
 
-    private void process(Attach attach) {
+    public void fetchZone(Attach attach) {
         val list = db.find(PermissionZone.class)
                 .where()
                 .eq("name", $.cutHead(attach.getValue()))
@@ -195,7 +124,7 @@ public class Fetcher implements PluginMessageListener, Runnable {
         val collect = $.map(list, Attach::build);
         attach.getSublist().addAll(collect);
 
-        $.walk(collect, a -> $.isZone(a.getValue()), this::process);
+        $.walk(collect, a -> $.isZone(a.getValue()), this::fetchZone);
     }
 
     private void handle(Player p, List<Attach> list) {
@@ -207,98 +136,26 @@ public class Fetcher implements PluginMessageListener, Runnable {
         PermissionFetchedEvent.call(p);
     }
 
-    /**
-     * @param value Zone name without '@' prefix.
-     * @return Fetched permission map.
-     */
-    public Map<String, Integer> fetchZone(String value) {
-        List<PermissionZone> founded = db.find(PermissionZone.class)
-                .where()
-                .eq("name", value)
-                .orderBy("type desc")
-                .findList();
-        Map<String, Integer> fetched = new ConcurrentHashMap<>();
-        founded.forEach(line -> {
-            attach(fetched, line);
-        });
-        return fetched;
-    }
-
-    /**
-     * @param zone Zone name without '@' prefix.
-     * @return List contains all user has zoned.
-     */
-    private List<String> lookZoned(String zone) {
-        List<String> out = new ArrayList<>();
-        fetched.forEach((who, attachment) -> {
-            if (attachment.hasZone(zone, true)) {
-                out.add(who);
-            }
-        });
-        return out;
-    }
-
-    private void add2fetched(List<String> list, Map<String, Integer> attachMap) {
-        for (String line : list) {
-            add2fetched(line, attachMap);
-        }
-    }
-
-    private void add2fetched(String name, Map<String, Integer> attachMap) {
-        add2fetched(fetched.get(name), attachMap);
-    }
-
-    private void add2fetched(Attachment attachment, Map<String, Integer> attachMap) {
-        attachMap.forEach((key, value) -> {
-            if (value.intValue() == 0) {
-                attachment.addPermission(key, false);
-            } else if (value.intValue() == 1) {
-                attachment.addPermission(key, true);
-            } else {
-//                attachment.addZone(key);
-            }
-        });
-    }
-
-    private void remove4fetched(List<String> list, Map<String, Integer> attachMap) {
-        for (String line : list) {
-            remove4fetched(line, attachMap);
-        }
-    }
-
-    private void remove4fetched(String name, Map<String, Integer> attachMap) {
-        remove4fetched(fetched.get(name), attachMap);
-    }
-
-    private void remove4fetched(Attachment attachment, Map<String, Integer> attachMap) {
-        attachMap.forEach((key, value) -> {
-            if (value.intValue() == 2) {
-                attachment.removeZone(key, true);
-            } else {
-                attachment.removePermission(key);
-            }
-        });
-    }
-
-    private void sendMessage(String name, String value, int add, boolean b) {
+    private void sendMessage(String name, String value, long outdated, boolean add, boolean b) {
         if (!b && !main.isOffline()) {
-            send(name, value, add);
+            send(name, value, outdated, add);
         }
     }
 
-    private void send(String name, String value, int add) {
+    private void send(String name, String value, long outdated, boolean add) {
         val itr = main.getServer().getOnlinePlayers().iterator();
         if (itr.hasNext()) {
-            System.out.println("Send channel. " + (add == 0 ? '+' : '-') + ':' + name + ':' + value);
+            System.out.println("Send channel. " + (add ? '+' : '-') + ':' + name + ':' + value);
             ByteArrayDataOutput buf = newDataOutput();
             buf.writeUTF("Forward");
             buf.writeUTF("ALL");
             buf.writeUTF(CHANNEL_SUB);
 
             ByteArrayDataOutput sub = newDataOutput();
-            sub.write(add);
+            sub.writeBoolean(add);
             sub.writeUTF(name);
             sub.writeUTF(value);
+            sub.writeLong(outdated);
 
             byte[] payload = sub.toByteArray();
 
@@ -316,8 +173,8 @@ public class Fetcher implements PluginMessageListener, Runnable {
         ByteArrayDataInput buf = newDataInput(data);
         if (CHANNEL_SUB.equals(buf.readUTF())) {
             buf.readShort();
-            if (buf.readByte() == 0) {
-                add(buf.readUTF(), buf.readUTF(), true);
+            if (buf.readBoolean()) {
+                add(buf.readUTF(), buf.readUTF(), buf.readLong(), true);
             } else {
                 remove(buf.readUTF(), buf.readUTF(), true);
             }
