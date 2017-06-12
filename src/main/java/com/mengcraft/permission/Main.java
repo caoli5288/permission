@@ -5,13 +5,13 @@ import com.mengcraft.permission.entity.PermissionZone;
 import com.mengcraft.simpleorm.EbeanHandler;
 import com.mengcraft.simpleorm.EbeanManager;
 import org.bukkit.ChatColor;
-import org.bukkit.event.Event;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
 
 /**
  * Created on 15-10-20.
@@ -19,10 +19,15 @@ import java.util.concurrent.Future;
 public class Main extends JavaPlugin {
 
     private boolean offline;
+    private static Main plugin;
 
     @Override
     public void onEnable() {
-        saveDefaultConfig();
+        plugin = this;
+
+        getConfig().options().copyDefaults(true);
+        saveConfig();
+
         setOffline(getConfig().getBoolean("offline"));
 
         EbeanHandler db = EbeanManager.DEFAULT.getHandler(this);
@@ -78,4 +83,7 @@ public class Main extends JavaPlugin {
         this.offline = offline;
     }
 
+    public static void log(String message) {
+        plugin.getLogger().log(Level.INFO, message);
+    }
 }

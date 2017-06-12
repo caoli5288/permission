@@ -28,7 +28,7 @@ import static com.mengcraft.permission.$.now;
 /**
  * Created on 16-4-8.
  */
-public class Fetcher implements PluginMessageListener {
+public class Fetcher implements PluginMessageListener, Runnable {
 
     private final Map<String, Attachment> fetched = new HashMap<>();
     private final Main main;
@@ -322,6 +322,11 @@ public class Fetcher implements PluginMessageListener {
                 remove(buf.readUTF(), buf.readUTF(), true);
             }
         }
+    }
+
+    @Override
+    public void run() {
+        $.walk(fetched, (k, v) -> v.cleanup());
     }
 
     public Map<String, Attachment> getFetched() {

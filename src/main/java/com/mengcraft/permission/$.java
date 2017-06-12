@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -66,6 +67,20 @@ public final class $ {
             if (p.test(e)) {
                 c.accept(e);
             }
+        }
+    }
+
+    public static <K, V> void walk(Map<K, V> input, BiConsumer<K, V> consumer) {
+        input.forEach(consumer);
+    }
+
+    public static <K, V> void walk(Map<K, V> input, BiPredicate<K, V> p, BiConsumer<K, V> consumer) {
+        K k;
+        V v;
+        for (Map.Entry<K, V> i : input.entrySet()) {
+            k = i.getKey();
+            v = i.getValue();
+            if (p.test(k, v)) consumer.accept(k, v);
         }
     }
 

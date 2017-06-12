@@ -4,6 +4,7 @@ import com.mengcraft.permission.entity.PermissionMXBean;
 import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
 import com.mengcraft.simpleorm.EbeanHandler;
+import lombok.val;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -11,6 +12,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -206,7 +209,12 @@ public class Commander implements CommandExecutor, Permission {
                     PermissionUser user = new PermissionUser();
                     user.setName(name);
                     user.setValue(value);
-                    user.setOutdated(new Timestamp(now() + day * DAY_TIME));
+                    if (main.getConfig().getBoolean("day.fully")) {
+                        user.setOutdated(new Timestamp(now() + day * DAY_TIME));
+                    } else {
+                        val now = LocalDate.now().plusDays(day).atStartOfDay();
+                        user.setOutdated(new Timestamp(now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()));
+                    }
                     main.execute(() -> {
                         db.save(user);
                         main.run(() -> fetcher.add(name, value));

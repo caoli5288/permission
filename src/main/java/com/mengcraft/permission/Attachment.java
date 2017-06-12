@@ -1,6 +1,8 @@
 package com.mengcraft.permission;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.val;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.permissions.PermissionAttachment;
 
 import java.util.HashMap;
@@ -73,9 +75,17 @@ public class Attachment {
         return null;
     }
 
+    public void cleanup() {
+        long now = System.currentTimeMillis();
+        int size = handled.size();
+        $.walk(ImmutableMap.copyOf(handled), (k, v) -> v.getOutdated() < now, (k, v) -> handled.remove(k));
+        if (size > handled.size()) {
+            Main.log("玩家" + ((HumanEntity) attachment.getPermissible()).getName() + "有些权限过期失效了");
+        }
+    }
+
     @Override
     public String toString() {
         return "Attachment(handled=" + handled + ", attachment=" + attachment.getPermissions() + ")";
     }
-
 }
