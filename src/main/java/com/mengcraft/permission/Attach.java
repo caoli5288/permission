@@ -1,6 +1,5 @@
 package com.mengcraft.permission;
 
-import com.google.common.collect.ImmutableMap;
 import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
 import lombok.val;
@@ -8,7 +7,6 @@ import org.bukkit.permissions.PermissionAttachment;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created on 17-6-12.
@@ -17,12 +15,12 @@ public class Attach {
 
     private final String value;
     private final long outdated;
-    private final List<Attach> subList;
+    private final List<Attach> sublist;
 
-    private Attach(String value, long outdated, List<Attach> subList) {
+    private Attach(String value, long outdated, List<Attach> sublist) {
         this.value = value;
         this.outdated = outdated;
-        this.subList = subList;
+        this.sublist = sublist;
     }
 
     public String getValue() {
@@ -33,13 +31,13 @@ public class Attach {
         return outdated;
     }
 
-    public List<Attach> getSubList() {
-        return subList;
+    public List<Attach> getSublist() {
+        return sublist;
     }
 
     public void handle(PermissionAttachment attachment) {
         if ($.isZone(value)) {
-            for (Attach attach : subList) {
+            for (Attach attach : sublist) {
                 attach.handle(attachment);
             }
         } else {
@@ -53,7 +51,7 @@ public class Attach {
 
     public void cancel(PermissionAttachment attachment) {
         if ($.isZone(value)) {
-            for (Attach attach : subList) {
+            for (Attach attach : sublist) {
                 attach.cancel(attachment);
             }
         } else {
@@ -65,25 +63,20 @@ public class Attach {
         }
     }
 
-    public Map<String, Attach> unfold() {
-        ImmutableMap.Builder<String, Attach> b = ImmutableMap.builder();
-        b.put(value, this);
-        if (!$.nil(subList)) {
-            for (Attach attach : subList) {
-                b.putAll(attach.unfold());
-            }
-        }
-        return b.build();
-    }
-
-    public Attach sub(String key) {
-        if ($.nil(subList)) return null;
-        for (Attach l : subList) {
-            if (l.value.equals(key)) return l;
-            val sub = l.sub(key);
+    public Pair<Attach, Attach> look(String key) {
+        if ($.nil(sublist)) return null;
+        for (Attach l : sublist) {
+            if (l.value.equals(key)) return Pair.of(this, l);
+            val sub = l.look(key);
             if (!$.nil(sub)) return sub;
         }
         return null;
+    }
+
+    public void removeSub(String key) {
+        if (!$.nil(sublist)) {
+            sublist.removeIf(attach -> attach.value.equals(key));
+        }
     }
 
     public static Attach build(PermissionZone p) {

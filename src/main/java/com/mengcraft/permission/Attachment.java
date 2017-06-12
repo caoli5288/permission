@@ -24,8 +24,8 @@ public class Attachment {
      * @param zone Zone name without '@'.
      * @return True if contains the zone.
      */
-    public boolean hasZone(String zone) {
-        return !$.nil(look("@" + zone));
+    public boolean hasZone(String zone, boolean depth) {
+        return !$.nil(look("@" + zone, depth));
     }
 
     public void addPermission(String permission, boolean value) {
@@ -50,16 +50,25 @@ public class Attachment {
         list.forEach(this::handle);
     }
 
-    public void removeZone(String zone) {
-        val attach = handled.remove("@" + zone);
-        if (!$.nil(attach)) attach.cancel(attachment);
+    public void removeZone(String zone, boolean depth) {
+        val look = look("@" + zone, depth);
+        if (!$.nil(look)) {
+            look.getValue().cancel(attachment);
+            if ($.nil(look.getKey())) {
+                handled.remove("@" + zone);
+            } else {
+                look.getKey().removeSub("@" + zone);
+            }
+        }
     }
 
-    public Attach look(String key) {
-        if (handled.containsKey(key)) return handled.get(key);
-        for (Attach l : handled.values()) {
-            val sub = l.sub(key);
-            if (!$.nil(sub)) return sub;
+    public Pair<Attach, Attach> look(String key, boolean depth) {
+        if (handled.containsKey(key)) return Pair.of(null, handled.get(key));
+        if (depth) {
+            for (Attach l : handled.values()) {
+                val sub = l.look(key);
+                if (!$.nil(sub)) return sub;
+            }
         }
         return null;
     }

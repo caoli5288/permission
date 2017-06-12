@@ -178,7 +178,7 @@ public class Fetcher implements PluginMessageListener {
                     .orderBy("type desc")
                     .findList();
 
-            val collect = $.collect(list, Attach::build);
+            val collect = $.map(list, Attach::build);
             $.walk(collect, attach -> $.isZone(attach.getValue()), this::process);
 
             main.run(() -> handle(p, collect));
@@ -192,8 +192,8 @@ public class Fetcher implements PluginMessageListener {
                 .orderBy("type desc")
                 .findList();
 
-        val collect = $.collect(list, Attach::build);
-        attach.getSubList().addAll(collect);
+        val collect = $.map(list, Attach::build);
+        attach.getSublist().addAll(collect);
 
         $.walk(collect, a -> $.isZone(a.getValue()), this::process);
     }
@@ -231,7 +231,7 @@ public class Fetcher implements PluginMessageListener {
     private List<String> lookZoned(String zone) {
         List<String> out = new ArrayList<>();
         fetched.forEach((who, attachment) -> {
-            if (attachment.hasZone(zone)) {
+            if (attachment.hasZone(zone, true)) {
                 out.add(who);
             }
         });
@@ -273,7 +273,7 @@ public class Fetcher implements PluginMessageListener {
     private void remove4fetched(Attachment attachment, Map<String, Integer> attachMap) {
         attachMap.forEach((key, value) -> {
             if (value.intValue() == 2) {
-                attachment.removeZone(key);
+                attachment.removeZone(key, true);
             } else {
                 attachment.removePermission(key);
             }

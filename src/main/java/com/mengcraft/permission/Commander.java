@@ -236,7 +236,7 @@ public class Commander implements CommandExecutor, Permission {
     public boolean hasPermission(Player p, String permission) {
         if (isZone(permission)) {
             Attachment attachment = fetcher.getFetched().get(p.getName());
-            return !$.nil(attachment) && attachment.hasZone(cutHead(permission));
+            return !$.nil(attachment) && attachment.hasZone(cutHead(permission), true);
         }
         return p.hasPermission(permission);
     }
