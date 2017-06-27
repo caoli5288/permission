@@ -4,6 +4,8 @@ import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
 import com.mengcraft.simpleorm.EbeanHandler;
 import com.mengcraft.simpleorm.EbeanManager;
+import lombok.val;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -12,6 +14,8 @@ import java.io.File;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
+
+import static com.mengcraft.permission.$.nil;
 
 /**
  * Created on 15-10-20.
@@ -48,17 +52,23 @@ public class Main extends JavaPlugin {
         }
         db.install();
 
-        Fetcher fetcher = new Fetcher(this, db);
+        Fetcher.INSTANCE.init(this, db);
         if (!offline) {
-            getServer().getMessenger().registerIncomingPluginChannel(this, Fetcher.CHANNEL, fetcher);
+            getServer().getMessenger().registerIncomingPluginChannel(this, Fetcher.CHANNEL, Fetcher.INSTANCE);
             getServer().getMessenger().registerOutgoingPluginChannel(this, Fetcher.CHANNEL);
         }
 
-        getServer().getPluginManager().registerEvents(new Executor(fetcher), this);
+        getServer().getPluginManager().registerEvents(new Executor(), this);
 
-        Commander commander = new Commander(this, db, fetcher);
+        Commander commander = new Commander(this, db);
         getCommand("permission").setExecutor(commander);
         getServer().getServicesManager().register(Permission.class, commander, this, ServicePriority.Normal);
+
+        if (!nil(Bukkit.getPluginManager().getPlugin("PlaceholderAPI"))) {
+            log("### Hook to PlaceholderAPI");
+            val placeholder = new MyPlaceholder(this);
+            placeholder.hook();
+        }
 
         String[] author = {
                 ChatColor.GREEN + "梦梦家高性能服务器出租店",
@@ -67,7 +77,7 @@ public class Main extends JavaPlugin {
         getServer().getConsoleSender().sendMessage(author);
     }
 
-    public Future<Void> execute(Runnable r) {
+    public static Future<Void> execute(Runnable r) {
         return CompletableFuture.runAsync(r);
     }
 
@@ -86,4 +96,9 @@ public class Main extends JavaPlugin {
     public static void log(String message) {
         plugin.getLogger().log(Level.INFO, message);
     }
+
+    public static void log(Exception e) {
+        plugin.getLogger().log(Level.SEVERE, e.toString(), e);
+    }
+
 }

@@ -22,16 +22,18 @@ import static com.mengcraft.permission.$.now;
 /**
  * Created on 16-4-8.
  */
-public class Fetcher implements PluginMessageListener, Runnable {
+public enum Fetcher implements PluginMessageListener, Runnable {
+
+    INSTANCE;
 
     private final Map<String, Attachment> fetched = new HashMap<>();
-    private final Main main;
-    private final EbeanHandler db;
+    private Main main;
+    private EbeanHandler db;
 
     public final static String CHANNEL = "BungeeCord";
     public final static String CHANNEL_SUB = "Permission";
 
-    public Fetcher(Main main, EbeanHandler db) {
+    void init(Main main, EbeanHandler db) {
         this.main = main;
         this.db = db;
     }
@@ -189,4 +191,9 @@ public class Fetcher implements PluginMessageListener, Runnable {
     public Map<String, Attachment> getFetched() {
         return fetched;
     }
+
+    public Attachment getFetched(String name) {
+        return fetched.get(name);
+    }
+
 }

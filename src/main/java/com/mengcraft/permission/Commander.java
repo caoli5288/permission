@@ -17,10 +17,12 @@ import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import static com.mengcraft.permission.$.cutHead;
 import static com.mengcraft.permission.$.isZone;
+import static com.mengcraft.permission.$.nil;
 import static com.mengcraft.permission.$.now;
 
 /**
@@ -28,16 +30,16 @@ import static com.mengcraft.permission.$.now;
  */
 public class Commander implements CommandExecutor, Permission {
 
-    private static final long DAY_TIME = 86400000;
+    private static final long DAY_TIME = TimeUnit.DAYS.toMillis(1);
 
     private final EbeanHandler db;
     private final Main main;
     private final Fetcher fetcher;
 
-    Commander(Main main, EbeanHandler db, Fetcher fetcher) {
+    Commander(Main main, EbeanHandler db) {
         this.main = main;
         this.db = db;
-        this.fetcher = fetcher;
+        fetcher = Fetcher.INSTANCE;
     }
 
     @Override
@@ -69,30 +71,34 @@ public class Commander implements CommandExecutor, Permission {
     }
 
     private void sendTargetZoneInfo(CommandSender sender, String name) {
-        List<PermissionZone> fetched = db.find(PermissionZone.class)
-                .where()
-                .eq("name", cutHead(name, 1))
-                .orderBy("type desc")
-                .findList();
-        sender.sendMessage(ChatColor.GOLD + ">>> Permission info call " + name);
-        for (PermissionMXBean zone : fetched) {
-            sender.sendMessage(ChatColor.GOLD + zone.toString());
-        }
-        sender.sendMessage(ChatColor.GOLD + "<<<");
+        Main.execute(() -> {
+            List<PermissionZone> fetched = db.find(PermissionZone.class)
+                    .where()
+                    .eq("name", cutHead(name, 1))
+                    .orderBy("type desc")
+                    .findList();
+            sender.sendMessage(ChatColor.GOLD + ">>> Permission info call " + name);
+            for (PermissionMXBean zone : fetched) {
+                sender.sendMessage(ChatColor.GOLD + zone.toString());
+            }
+            sender.sendMessage(ChatColor.GOLD + "<<<");
+        });
     }
 
     private void sendTargetInfo(CommandSender sender, String name) {
-        List<PermissionUser> fetched = db.find(PermissionUser.class)
-                .where()
-                .eq("name", name)
-                .gt("outdated", new Timestamp(now()))
-                .orderBy("type desc")
-                .findList();
-        sender.sendMessage(ChatColor.GOLD + ">>> Permission info call " + name);
-        for (PermissionMXBean zone : fetched) {
-            sender.sendMessage(ChatColor.GOLD + zone.toString());
-        }
-        sender.sendMessage(ChatColor.GOLD + "<<<");
+        Main.execute(() -> {
+            List<PermissionUser> fetched = db.find(PermissionUser.class)
+                    .where()
+                    .eq("name", name)
+                    .gt("outdated", new Timestamp(now()))
+                    .orderBy("type desc")
+                    .findList();
+            sender.sendMessage(ChatColor.GOLD + ">>> Permission info call " + name);
+            for (PermissionMXBean zone : fetched) {
+                sender.sendMessage(ChatColor.GOLD + zone.toString());
+            }
+            sender.sendMessage(ChatColor.GOLD + "<<<");
+        });
     }
 
     private boolean execute(CommandSender sender, String name, String value, Iterator<String> it) {
@@ -145,7 +151,7 @@ public class Commander implements CommandExecutor, Permission {
         PermissionZone insert = new PermissionZone();
         insert.setName(name);
         insert.setValue(value);
-        main.execute(() -> {
+        Main.execute(() -> {
             db.save(insert);
             main.run(() -> fetcher.add('@' + name, value, -1));
         });
@@ -154,38 +160,34 @@ public class Commander implements CommandExecutor, Permission {
 
     private boolean execute(CommandSender sender, String name, String value, String label) {
         if (label.equals("cancel")) {
-            if (isZone(name)) {
-                PermissionZone fetched = db.find(PermissionZone.class)
-                        .where()
-                        .eq("name", cutHead(name, 1))
-                        .eq("value", value)
-                        .findUnique();
-                if (fetched == null) {
-                    sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
-                } else {
-                    main.execute(() -> {
+            Main.execute(() -> {
+                if (isZone(name)) {
+                    PermissionZone fetched = db.find(PermissionZone.class)
+                            .where()
+                            .eq("name", cutHead(name, 1))
+                            .eq("value", value)
+                            .findUnique();
+                    if (!nil(fetched)) {
                         db.delete(fetched);
                         main.run(() -> fetcher.remove(name, value));
-                    });
-                    sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
-                }
-            } else {
-                PermissionUser fetched = db.find(PermissionUser.class)
-                        .where()
-                        .eq("name", name)
-                        .eq("value", value)
-                        .gt("outdated", new Timestamp(now()))
-                        .findUnique();
-                if (fetched == null) {
+                    }
                     sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
                 } else {
-                    main.execute(() -> {
+                    PermissionUser fetched = db.find(PermissionUser.class)
+                            .where()
+                            .eq("name", name)
+                            .eq("value", value)
+                            .gt("outdated", new Timestamp(now()))
+                            .findUnique();
+                    if (fetched == null) {
+                        sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
+                    } else {
                         db.delete(fetched);
                         main.run(() -> fetcher.remove(name, value));
-                    });
-                    sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
+                        sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
+                    }
                 }
-            }
+            });
             return true;
         } else {
             return execute(sender, name, value, Integer.parseInt(label));
@@ -198,35 +200,35 @@ public class Commander implements CommandExecutor, Permission {
         } else if (day == 0) {
             sender.sendMessage(ChatColor.DARK_RED + "Daytime can not be zero!");
         } else {
-            PermissionUser fetched = db.find(PermissionUser.class)
-                    .where()
-                    .eq("name", name)
-                    .eq("value", value)
-                    .gt("outdated", new Timestamp(now()))
-                    .findUnique();
-            if (fetched == null) {
-                if (day > 0) {
-                    PermissionUser user = new PermissionUser();
-                    user.setName(name);
-                    user.setValue(value);
-                    if (main.getConfig().getBoolean("day.fully")) {
-                        user.setOutdated(new Timestamp(now() + day * DAY_TIME));
-                    } else {
-                        val now = LocalDate.now().plusDays(day).atStartOfDay();
-                        user.setOutdated(new Timestamp(now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()));
-                    }
-                    main.execute(() -> {
+            Main.execute(() -> {
+                PermissionUser fetched = db.find(PermissionUser.class)
+                        .where()
+                        .eq("name", name)
+                        .eq("value", value)
+                        .gt("outdated", new Timestamp(now()))
+                        .findUnique();
+                if (fetched == null) {
+                    if (day > 0) {
+                        PermissionUser user = new PermissionUser();
+                        user.setName(name);
+                        user.setValue(value);
+                        if (main.getConfig().getBoolean("day.fully")) {
+                            user.setOutdated(new Timestamp(now() + day * DAY_TIME));
+                        } else {
+                            val now = LocalDate.now().plusDays(day).atStartOfDay();
+                            user.setOutdated(new Timestamp(now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()));
+                        }
                         db.save(user);
                         main.run(() -> fetcher.add(name, value, user.getOutdatedTime()));
-                    });
+                    }
+                    sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
+                } else {
+                    fetched.setOutdated(new Timestamp(fetched.getOutdatedTime() + day * DAY_TIME));
+                    fetcher.add(name, value, fetched.getOutdatedTime());
+                    db.save(fetched);
+                    sender.sendMessage(ChatColor.GOLD + "Increased outdated done!");
                 }
-                sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
-            } else {
-                fetched.setOutdated(new Timestamp(fetched.getOutdatedTime() + day * DAY_TIME));
-                fetcher.add(name, value, fetched.getOutdatedTime());
-                main.execute(() -> db.save(fetched));
-                sender.sendMessage(ChatColor.GOLD + "Increased outdated done!");
-            }
+            });
             return true;
         }
         return false;

@@ -10,20 +10,17 @@ import org.bukkit.event.player.PlayerQuitEvent;
  */
 class Executor implements Listener {
 
-    private final Fetcher fetcher;
-
-    Executor(Fetcher fetcher) {
-        this.fetcher = fetcher;
+    Executor() {
     }
 
     @EventHandler
     public void handle(PlayerJoinEvent event) {
-        fetcher.fetch(event.getPlayer());
+        Fetcher.INSTANCE.fetch(event.getPlayer());
     }
 
     @EventHandler
     public void handle(PlayerQuitEvent event) {
-        fetcher.getFetched().remove(event.getPlayer().getName());
+        Fetcher.INSTANCE.getFetched().remove(event.getPlayer().getName());
     }
 
 }
