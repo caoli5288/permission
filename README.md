@@ -27,11 +27,12 @@ This is a light weight permission plugin for bukkit based minecraft server.
   - `Basic permission that player can use /permission command query self(suggest not give to everyone).`
 - permission.admin
   - `Administrator permission.`
-
-## Feature
-- Player permission expires.
-- Multiple group inherit.
-- Database support(no lag).
+  
+## Placeholder
+- permission_expire_any.permission
+  - Return `any.permission`'s outdated time by unix time stamp.
+- permission_expiretime_@anygroup
+  - Return `@anygroup`'s outdated time by human readable format.
 
 ## Require
 - [SimpleORM](https://github.com/caoli5288/SimpleORM/releases)
