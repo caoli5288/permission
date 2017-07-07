@@ -78,7 +78,10 @@ public class Main extends JavaPlugin {
     }
 
     public static Future<Void> execute(Runnable r) {
-        return CompletableFuture.runAsync(r);
+        return CompletableFuture.runAsync(r).exceptionally(thr -> {
+            log(thr);
+            return null;
+        });
     }
 
     public int run(Runnable r) {
@@ -97,7 +100,7 @@ public class Main extends JavaPlugin {
         plugin.getLogger().log(Level.INFO, message);
     }
 
-    public static void log(Exception e) {
+    public static void log(Throwable e) {
         plugin.getLogger().log(Level.SEVERE, e.toString(), e);
     }
 

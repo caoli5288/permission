@@ -1,6 +1,7 @@
 package com.mengcraft.permission.entity;
 
 import com.avaje.ebean.annotation.CreatedTimestamp;
+import lombok.Data;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -10,6 +11,7 @@ import java.sql.Timestamp;
 /**
  * Created on 15-10-20.
  */
+@Data
 @Entity
 public class PermissionUser implements PermissionMXBean {
 
@@ -23,50 +25,13 @@ public class PermissionUser implements PermissionMXBean {
     private String value;
 
     @Column
+    private int type;
+
+    @Column
     private Timestamp outdated;
 
     @CreatedTimestamp
     private Timestamp created;
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getValue() {
-        return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
-    }
-
-    public Timestamp getOutdated() {
-        return outdated;
-    }
-
-    public void setOutdated(Timestamp outdated) {
-        this.outdated = outdated;
-    }
-
-    public Timestamp getCreated() {
-        return created;
-    }
-
-    public void setCreated(Timestamp created) {
-        this.created = created;
-    }
 
     @Override
     public String toString() {
@@ -76,5 +41,4 @@ public class PermissionUser implements PermissionMXBean {
     public long getOutdatedTime() {
         return getOutdated().getTime();
     }
-
 }

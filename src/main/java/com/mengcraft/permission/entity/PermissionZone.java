@@ -1,5 +1,7 @@
 package com.mengcraft.permission.entity;
 
+import lombok.Data;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -7,6 +9,7 @@ import javax.persistence.Id;
 /**
  * Created on 15-10-26.
  */
+@Data
 @Entity
 public class PermissionZone implements PermissionMXBean {
 
@@ -19,33 +22,11 @@ public class PermissionZone implements PermissionMXBean {
     @Column
     private String value;
 
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getValue() {
-        return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
-    }
+    @Column
+    private int type;
 
     @Override
     public String toString() {
         return "value='" + value + '\'';
     }
-
 }

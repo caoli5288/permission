@@ -147,7 +147,7 @@ public enum Fetcher implements PluginMessageListener, Runnable {
     private void send(String name, String value, long outdated, boolean add) {
         val itr = main.getServer().getOnlinePlayers().iterator();
         if (itr.hasNext()) {
-            System.out.println("Send channel. " + (add ? '+' : '-') + ':' + name + ':' + value);
+            Main.log("Send channel. " + (add ? '+' : '-') + ':' + name + ':' + value);
             ByteArrayDataOutput buf = newDataOutput();
             buf.writeUTF("Forward");
             buf.writeUTF("ALL");

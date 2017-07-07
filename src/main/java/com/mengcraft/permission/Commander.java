@@ -148,10 +148,11 @@ public class Commander implements CommandExecutor, Permission {
      * @param type   {@code true} if zone value.
      */
     private void addToZone(CommandSender sender, String name, String value, boolean type) {
-        PermissionZone insert = new PermissionZone();
-        insert.setName(name);
-        insert.setValue(value);
         Main.execute(() -> {
+            PermissionZone insert = new PermissionZone();
+            insert.setName(name);
+            insert.setValue(value);
+            insert.setType(type ? 1 : 0);
             db.save(insert);
             main.run(() -> fetcher.add('@' + name, value, -1));
         });
@@ -212,6 +213,7 @@ public class Commander implements CommandExecutor, Permission {
                         PermissionUser user = new PermissionUser();
                         user.setName(name);
                         user.setValue(value);
+                        user.setType($.isZone(value) ? 1 : 0);
                         if (main.getConfig().getBoolean("day.fully")) {
                             user.setOutdated(new Timestamp(now() + day * DAY_TIME));
                         } else {
