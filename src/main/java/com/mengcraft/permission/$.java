@@ -40,26 +40,12 @@ public final class $ {
         return any == null;
     }
 
-    public static <K, V> Map<K, V> reduce(Map<K, V> input, BiPredicate<K, V> p) {
-        Map<K, V> output = new HashMap<>();
-        input.forEach((k, v) -> {
-            if (p.test(k, v)) output.put(k, v);
-        });
-        return output;
-    }
-
     public static <R, E> List<R> map(List<E> in, Function<E, R> func) {
         List<R> out = new ArrayList<>(in.size());
         for (E i : in) {
             out.add(func.apply(i));
         }
         return out;
-    }
-
-    public static <E> void walk(Collection<E> list, Consumer<E> c) {
-        for (E i : list) {
-            c.accept(i);
-        }
     }
 
     public static <E> void walk(Collection<E> i, Predicate<E> p, Consumer<E> c) {

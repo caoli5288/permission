@@ -15,7 +15,7 @@ import java.util.Map;
 public class Attachment {
 
     private final PermissionAttachment attachment;
-    private final Map<String, Attach> handled;
+    private final Map<String, PermissionValue> handled;
 
     public Attachment(PermissionAttachment attachment) {
         this.attachment = attachment;
@@ -39,19 +39,19 @@ public class Attachment {
         attachment.remove();
     }
 
-    public void handle(Attach attach) {
+    public void handle(PermissionValue attach) {
         handled.put(attach.getValue(), attach);
         attach.handle(attachment);
     }
 
-    public void handle(List<Attach> list) {
+    public void handle(List<PermissionValue> list) {
         list.forEach(this::handle);
     }
 
-    public Pair<Attach, Attach> look(String key, boolean depth) {
+    public Pair<PermissionValue, PermissionValue> look(String key, boolean depth) {
         if (handled.containsKey(key)) return Pair.of(null, handled.get(key));
         if (depth) {
-            for (Attach l : handled.values()) {
+            for (PermissionValue l : handled.values()) {
                 val sub = l.lookSub(key);
                 if (!$.nil(sub)) return sub;
             }

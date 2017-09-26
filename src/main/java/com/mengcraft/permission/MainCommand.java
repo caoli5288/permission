@@ -28,7 +28,7 @@ import static com.mengcraft.permission.$.now;
 /**
  * Created on 15-10-20.
  */
-public class Commander implements CommandExecutor, Permission {
+public class MainCommand implements CommandExecutor, Permission {
 
     private static final long DAY_TIME = TimeUnit.DAYS.toMillis(1);
 
@@ -36,7 +36,7 @@ public class Commander implements CommandExecutor, Permission {
     private final Main main;
     private final Fetcher fetcher;
 
-    Commander(Main main, EbeanHandler db) {
+    MainCommand(Main main, EbeanHandler db) {
         this.main = main;
         this.db = db;
         fetcher = Fetcher.INSTANCE;
@@ -71,7 +71,7 @@ public class Commander implements CommandExecutor, Permission {
     }
 
     private void sendTargetZoneInfo(CommandSender sender, String name) {
-        Main.execute(() -> {
+        Main.runAsync(() -> {
             List<PermissionZone> fetched = db.find(PermissionZone.class)
                     .where()
                     .eq("name", cutHead(name, 1))
@@ -86,7 +86,7 @@ public class Commander implements CommandExecutor, Permission {
     }
 
     private void sendTargetInfo(CommandSender sender, String name) {
-        Main.execute(() -> {
+        Main.runAsync(() -> {
             List<PermissionUser> fetched = db.find(PermissionUser.class)
                     .where()
                     .eq("name", name)
@@ -148,7 +148,7 @@ public class Commander implements CommandExecutor, Permission {
      * @param type   {@code true} if zone value.
      */
     private void addToZone(CommandSender sender, String name, String value, boolean type) {
-        Main.execute(() -> {
+        Main.runAsync(() -> {
             PermissionZone insert = new PermissionZone();
             insert.setName(name);
             insert.setValue(value);
@@ -161,7 +161,7 @@ public class Commander implements CommandExecutor, Permission {
 
     private boolean execute(CommandSender sender, String name, String value, String label) {
         if (label.equals("cancel")) {
-            Main.execute(() -> {
+            Main.runAsync(() -> {
                 if (isZone(name)) {
                     PermissionZone fetched = db.find(PermissionZone.class)
                             .where()
@@ -201,7 +201,7 @@ public class Commander implements CommandExecutor, Permission {
         } else if (day == 0) {
             sender.sendMessage(ChatColor.DARK_RED + "Daytime can not be zero!");
         } else {
-            Main.execute(() -> {
+            Main.runAsync(() -> {
                 PermissionUser fetched = db.find(PermissionUser.class)
                         .where()
                         .eq("name", name)
@@ -237,7 +237,7 @@ public class Commander implements CommandExecutor, Permission {
     }
 
     private boolean isLoop(String name, String zone) {
-        val attach = Attach.build(zone, -1);
+        val attach = PermissionValue.build(zone, -1);
         fetcher.fetchZone(attach);
         return !$.nil(attach.lookSub("@" + name));
     }
@@ -250,7 +250,7 @@ public class Commander implements CommandExecutor, Permission {
     @Override
     public boolean hasPermission(Player p, String permission) {
         if (isZone(permission)) {
-            Attachment attachment = fetcher.getFetched().get(p.getName());
+            Attachment attachment = fetcher.getFetched(p.getName());
             return !$.nil(attachment) && attachment.hasZone(cutHead(permission), true);
         }
         return p.hasPermission(permission);

@@ -48,7 +48,7 @@ public enum Fetcher implements PluginMessageListener, Runnable {
         } else {
             val attachment = fetched.get(name);
             if (!$.nil(attachment)) {
-                val attach = Attach.build(value, outdated);
+                val attach = PermissionValue.build(value, outdated);
                 if ($.isZone(value)) {
                     fetchZone(attach);
                 }
@@ -59,7 +59,7 @@ public enum Fetcher implements PluginMessageListener, Runnable {
     }
 
     private void addToZone(String name, String value) {
-        val attach = Attach.build(value, -1);
+        val attach = PermissionValue.build(value, -1);
         if ($.isZone(value)) {
             fetchZone(attach);
         }
@@ -101,7 +101,7 @@ public enum Fetcher implements PluginMessageListener, Runnable {
     }
 
     public void fetch(Player p) {
-        main.execute(() -> {
+        main.runAsync(() -> {
             val list = db.find(PermissionUser.class)
                     .where()
                     .eq("name", p.getName())
@@ -109,27 +109,27 @@ public enum Fetcher implements PluginMessageListener, Runnable {
                     .orderBy("type desc")
                     .findList();
 
-            val collect = $.map(list, Attach::build);
+            val collect = $.map(list, PermissionValue::build);
             $.walk(collect, attach -> $.isZone(attach.getValue()), this::fetchZone);
 
             main.run(() -> handle(p, collect));
         });
     }
 
-    public void fetchZone(Attach attach) {
+    public void fetchZone(PermissionValue attach) {
         val list = db.find(PermissionZone.class)
                 .where()
                 .eq("name", $.cutHead(attach.getValue()))
                 .orderBy("type desc")
                 .findList();
 
-        val collect = $.map(list, Attach::build);
+        val collect = $.map(list, PermissionValue::build);
         attach.getSublist().addAll(collect);
 
         $.walk(collect, a -> $.isZone(a.getValue()), this::fetchZone);
     }
 
-    private void handle(Player p, List<Attach> list) {
+    private void handle(Player p, List<PermissionValue> list) {
         val old = fetched.remove(p.getName());
         if (!$.nil(old)) old.removePermission();
         val attachment = new Attachment(p.addAttachment(main));

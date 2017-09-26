@@ -15,11 +15,11 @@ This is a light weight permission plugin for bukkit based minecraft server.
   - This command make group vip_group inherit group default_group.
 - /permission @default_group xkit.use
   - This command give permission xkit.use to group default_group.
-- /permission him xkit.use remove
+- /permission him xkit.use cancel
   - This command remove not expires permission xkit.use from player him.
   - I recommend donot use this operation to remove player's permission,
   - Use permission him xkit.use -7 to withdraw 7day expires is goodway.
-- /permission @default_group xkit.use remove
+- /permission @default_group xkit.use cancel
   - This command remove permission xkit.use from group default_group.
 
 ## Permission

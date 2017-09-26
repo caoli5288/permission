@@ -7,8 +7,8 @@
 
     <repositories>
         <repository>
-            <id>bukkit-repo</id>
-            <url>http://repo.md-5.net/content/groups/public/</url>
+            <id>i7mc-repo</id>
+            <url>http://ci.mengcraft.com:8080/plugin/repository/everything/</url>
         </repository>
         <repository>
             <id>repo-placeholder</id>
@@ -18,9 +18,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.bukkit</groupId>
-            <artifactId>bukkit</artifactId>
-            <version>1.8.8-R0.1-SNAPSHOT</version>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot-api</artifactId>
+            <version>1.12.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

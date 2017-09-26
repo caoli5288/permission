@@ -4,6 +4,7 @@ import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
 import com.mengcraft.simpleorm.EbeanHandler;
 import com.mengcraft.simpleorm.EbeanManager;
+import lombok.Getter;
 import lombok.val;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -20,6 +21,7 @@ import static com.mengcraft.permission.$.nil;
 /**
  * Created on 15-10-20.
  */
+@Getter
 public class Main extends JavaPlugin {
 
     private boolean offline;
@@ -32,7 +34,7 @@ public class Main extends JavaPlugin {
         getConfig().options().copyDefaults(true);
         saveConfig();
 
-        setOffline(getConfig().getBoolean("offline"));
+        offline = getConfig().getBoolean("offline");
 
         EbeanHandler db = EbeanManager.DEFAULT.getHandler(this);
         if (!db.isInitialized()) {
@@ -60,9 +62,9 @@ public class Main extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(new Executor(), this);
 
-        Commander commander = new Commander(this, db);
-        getCommand("permission").setExecutor(commander);
-        getServer().getServicesManager().register(Permission.class, commander, this, ServicePriority.Normal);
+        MainCommand command = new MainCommand(this, db);
+        getCommand("permission").setExecutor(command);
+        getServer().getServicesManager().register(Permission.class, command, this, ServicePriority.Normal);
 
         if (!nil(Bukkit.getPluginManager().getPlugin("PlaceholderAPI"))) {
             log("### Hook to PlaceholderAPI");
@@ -77,7 +79,7 @@ public class Main extends JavaPlugin {
         getServer().getConsoleSender().sendMessage(author);
     }
 
-    public static Future<Void> execute(Runnable r) {
+    public static Future<Void> runAsync(Runnable r) {
         return CompletableFuture.runAsync(r).exceptionally(thr -> {
             log(thr);
             return null;
@@ -86,14 +88,6 @@ public class Main extends JavaPlugin {
 
     public int run(Runnable r) {
         return getServer().getScheduler().runTask(this, r).getTaskId();
-    }
-
-    public boolean isOffline() {
-        return offline;
-    }
-
-    private void setOffline(boolean offline) {
-        this.offline = offline;
     }
 
     public static void log(String message) {
