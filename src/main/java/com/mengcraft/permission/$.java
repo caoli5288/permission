@@ -1,8 +1,10 @@
 package com.mengcraft.permission;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -70,4 +72,11 @@ public final class $ {
         }
     }
 
+    public static Timestamp next(long day) {
+        return next(LocalDateTime.now(), day);
+    }
+
+    public static Timestamp next(LocalDateTime time, long day) {
+        return new Timestamp(time.plusDays(day).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+    }
 }

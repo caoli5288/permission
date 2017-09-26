@@ -17,7 +17,6 @@ import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import static com.mengcraft.permission.$.cutHead;
@@ -29,8 +28,6 @@ import static com.mengcraft.permission.$.now;
  * Created on 15-10-20.
  */
 public class MainCommand implements CommandExecutor, Permission {
-
-    private static final long DAY_TIME = TimeUnit.DAYS.toMillis(1);
 
     private final EbeanHandler db;
     private final Main main;
@@ -215,7 +212,8 @@ public class MainCommand implements CommandExecutor, Permission {
                         user.setValue(value);
                         user.setType($.isZone(value) ? 1 : 0);
                         if (main.getConfig().getBoolean("day.fully")) {
-                            user.setOutdated(new Timestamp(now() + day * DAY_TIME));
+
+                            user.setOutdated($.next(day));
                         } else {
                             val now = LocalDate.now().plusDays(day).atStartOfDay();
                             user.setOutdated(new Timestamp(now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()));
@@ -225,7 +223,7 @@ public class MainCommand implements CommandExecutor, Permission {
                     }
                     sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
                 } else {
-                    fetched.setOutdated(new Timestamp(fetched.getOutdatedTime() + day * DAY_TIME));
+                    fetched.setOutdated($.next(fetched.getOutdated().toLocalDateTime(), day));
                     fetcher.add(name, value, fetched.getOutdatedTime());
                     db.save(fetched);
                     sender.sendMessage(ChatColor.GOLD + "Increased outdated done!");
