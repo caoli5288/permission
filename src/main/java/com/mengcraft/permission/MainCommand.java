@@ -242,7 +242,7 @@ public class MainCommand implements CommandExecutor, Permission {
 
     @Override
     public boolean addPermission(Player p, String permission, int time) {
-        return !hasPermission(p, permission) && execute(main.getServer().getConsoleSender(), p.getName(), Arrays.asList(permission, String.valueOf(time)).iterator());
+        return execute(main.getServer().getConsoleSender(), p.getName(), permission, time);
     }
 
     @Override
