@@ -89,7 +89,7 @@ public class PermissionValue {
     }
 
     public static PermissionValue build(PermissionUser p) {
-        return new PermissionValue(p.getValue(), p.getOutdatedTime(), $.isZone(p.getValue()) ? new LinkedList<>() : null);
+        return new PermissionValue(p.getValue(), p.getOutdated().getTime(), $.isZone(p.getValue()) ? new LinkedList<>() : null);
     }
 
 }

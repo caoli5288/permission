@@ -2,8 +2,8 @@ package com.mengcraft.permission.entity;
 
 import com.avaje.ebean.annotation.CreatedTimestamp;
 import lombok.Data;
+import lombok.ToString;
 
-import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import java.sql.Timestamp;
@@ -13,32 +13,16 @@ import java.sql.Timestamp;
  */
 @Data
 @Entity
+@ToString(of = {"value", "outdated"})
 public class PermissionUser implements PermissionMXBean {
 
     @Id
     private int id;
-
-    @Column
     private String name;
-
-    @Column
     private String value;
-
-    @Column
-    private int type;
-
-    @Column
-    private Timestamp outdated;
+    private boolean type;
 
     @CreatedTimestamp
     private Timestamp created;
-
-    @Override
-    public String toString() {
-        return "value='" + getValue() + '\'' + ", outdated='" + getOutdated() + '\'';
-    }
-
-    public long getOutdatedTime() {
-        return getOutdated().getTime();
-    }
+    private Timestamp outdated;
 }

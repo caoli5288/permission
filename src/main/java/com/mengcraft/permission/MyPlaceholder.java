@@ -23,7 +23,7 @@ public class MyPlaceholder extends EZPlaceholderHook {
             if (nil(attach)) return "-1";
             val look = attach.look(input.next(), false);
             if (nil(look)) return "-1";
-            return "" + (look.getValue().getOutdated() - $.now());
+            return "" + (look.getRight().getOutdated() - $.now());
         }),
 
         EXPIRETIME((p, input) -> {

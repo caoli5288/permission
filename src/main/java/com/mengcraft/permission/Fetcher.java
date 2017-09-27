@@ -66,8 +66,8 @@ public enum Fetcher implements PluginMessageListener, Runnable {
         $.walk(fetched, (k, v) -> {
             val look = v.look(name, true);
             if (!$.nil(look)) {
-                look.getValue().getSublist().add(attach.mirror());
-                look.getValue().handle(v.getAttachment());
+                look.getRight().getSublist().add(attach.mirror());
+                look.getRight().handle(v.getAttachment());
             }
         });
     }
@@ -92,7 +92,7 @@ public enum Fetcher implements PluginMessageListener, Runnable {
         $.walk(fetched, (k, v) -> {
             val look = v.look(name, true);
             if (!$.nil(look)) {
-                val sub = look.getValue().removeSub(value);
+                val sub = look.getRight().removeSub(value);
                 if (!$.nil(sub)) {
                     sub.cancel(v.getAttachment());
                 }
@@ -101,7 +101,7 @@ public enum Fetcher implements PluginMessageListener, Runnable {
     }
 
     public void fetch(Player p) {
-        main.runAsync(() -> {
+        Main.runAsync(() -> {
             val list = db.find(PermissionUser.class)
                     .where()
                     .eq("name", p.getName())
@@ -117,6 +117,7 @@ public enum Fetcher implements PluginMessageListener, Runnable {
     }
 
     public void fetchZone(PermissionValue attach) {
+        $.thr(!$.isZone(attach.getValue()), "Illegal argument");
         val list = db.find(PermissionZone.class)
                 .where()
                 .eq("name", $.cutHead(attach.getValue()))

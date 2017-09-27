@@ -1,8 +1,8 @@
 package com.mengcraft.permission.entity;
 
 import lombok.Data;
+import lombok.ToString;
 
-import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
@@ -11,22 +11,12 @@ import javax.persistence.Id;
  */
 @Data
 @Entity
+@ToString(of = "value")
 public class PermissionZone implements PermissionMXBean {
 
     @Id
     private int id;
-
-    @Column
     private String name;
-
-    @Column
     private String value;
-
-    @Column
-    private int type;
-
-    @Override
-    public String toString() {
-        return "value='" + value + '\'';
-    }
+    private boolean type;
 }

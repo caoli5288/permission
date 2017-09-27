@@ -34,6 +34,10 @@ public final class $ {
         return line.charAt(0) == '-';
     }
 
+    public static boolean isAlter(String line) {
+        return line.charAt(0) == '?';
+    }
+
     public static long now() {
         return System.currentTimeMillis();
     }
@@ -77,6 +81,11 @@ public final class $ {
     }
 
     public static Timestamp next(LocalDateTime time, long day) {
-        return new Timestamp(time.plusDays(day).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+        return Timestamp.from(time.plusDays(day).atZone(ZoneId.systemDefault()).toInstant());
     }
+
+    public static void thr(boolean b, String message) {
+        if (b) throw new IllegalStateException(message);
+    }
+
 }

@@ -5,6 +5,7 @@ import com.mengcraft.permission.entity.PermissionUser;
 import com.mengcraft.permission.entity.PermissionZone;
 import com.mengcraft.simpleorm.EbeanHandler;
 import lombok.val;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -17,7 +18,6 @@ import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Level;
 
 import static com.mengcraft.permission.$.cutHead;
 import static com.mengcraft.permission.$.isZone;
@@ -31,12 +31,11 @@ public class MainCommand implements CommandExecutor, Permission {
 
     private final EbeanHandler db;
     private final Main main;
-    private final Fetcher fetcher;
+    private final Fetcher fetcher = Fetcher.INSTANCE;
 
     MainCommand(Main main, EbeanHandler db) {
         this.main = main;
         this.db = db;
-        fetcher = Fetcher.INSTANCE;
     }
 
     @Override
@@ -45,7 +44,7 @@ public class MainCommand implements CommandExecutor, Permission {
         if (it.hasNext()) {
             return execute(p, it.next(), it);
         } else if (p instanceof Player) {
-            sendTargetInfo(p, p.getName());
+            sendInfo(p, p.getName());
             return true;
         }
         return false;
@@ -55,19 +54,17 @@ public class MainCommand implements CommandExecutor, Permission {
         if (sender.hasPermission("permission.admin")) {
             if (it.hasNext()) {
                 return execute(sender, name, it.next(), it);
+            } else if (isZone(name)) {
+                sendInfoZone(sender, name);
             } else {
-                if (isZone(name)) {
-                    sendTargetZoneInfo(sender, name);
-                } else {
-                    sendTargetInfo(sender, name);
-                }
+                sendInfo(sender, name);
             }
             return true;
         }
         return false;
     }
 
-    private void sendTargetZoneInfo(CommandSender sender, String name) {
+    private void sendInfoZone(CommandSender sender, String name) {
         Main.runAsync(() -> {
             List<PermissionZone> fetched = db.find(PermissionZone.class)
                     .where()
@@ -82,7 +79,7 @@ public class MainCommand implements CommandExecutor, Permission {
         });
     }
 
-    private void sendTargetInfo(CommandSender sender, String name) {
+    private void sendInfo(CommandSender sender, String name) {
         Main.runAsync(() -> {
             List<PermissionUser> fetched = db.find(PermissionUser.class)
                     .where()
@@ -99,10 +96,11 @@ public class MainCommand implements CommandExecutor, Permission {
     }
 
     private boolean execute(CommandSender sender, String name, String value, Iterator<String> it) {
+        val box = PermissionBox.of(value);
         if (it.hasNext()) {
-            return execute(sender, name, value, it.next());
+            return execute(sender, name, box, it.next());
         } else if (isZone(name)) {
-            return addToZone(sender, cutHead(name), value);
+            return addToZone(sender, cutHead(name), box);
         } else {
             sender.sendMessage(ChatColor.DARK_RED + "You must type a daytime!");
         }
@@ -110,139 +108,112 @@ public class MainCommand implements CommandExecutor, Permission {
     }
 
     /**
-     * @param sender The command sender.
-     * @param name   Zone name without prefix.
-     * @param value  A permission or zone.
-     * @return {@code true} if operation ok.
+     * @param sender the command sender
+     * @param name   zone name without prefix
+     * @param box    a permission value box
+     * @return {@code true} only if all operation okay
      */
-    private boolean addToZone(CommandSender sender, String name, String value) {
-        if (isZone(value)) {
-            if (name.equals(cutHead(value)) || isLoop(name, value)) {
-                sender.sendMessage(ChatColor.DARK_RED + "Loop extend permissible!");
-            } else {
-                try {
-                    addToZone(sender, name, value, true);
-                } catch (Exception e) {
-                    main.getLogger().log(Level.WARNING, "", e);
-                }
-                return true;
-            }
-        } else {
-            try {
-                addToZone(sender, name, value, false);
-            } catch (Exception e) {
-                main.getLogger().log(Level.WARNING, "", e);
-            }
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * @param sender The command sender.
-     * @param name   Zone name without prefix.
-     * @param value  A permission or zone.
-     * @param type   {@code true} if zone value.
-     */
-    private void addToZone(CommandSender sender, String name, String value, boolean type) {
+    private boolean addToZone(CommandSender sender, String name, PermissionBox box) {
+        $.thr(box.isAlter() || box.isWithdraw(), "Illegal argument");
         Main.runAsync(() -> {
-            PermissionZone insert = new PermissionZone();
-            insert.setName(name);
-            insert.setValue(value);
-            insert.setType(type ? 1 : 0);
-            db.save(insert);
+            if (box.isZone()) {
+                $.thr(name.equals(box.getValue()) || isLoop(name, box.getValue()), "Loop inherit");
+            }
+            val zone = new PermissionZone();
+            zone.setName(name);
+            val value = box.flat();
+            zone.setValue(value);
+            zone.setType(box.isZone());
+            db.save(zone);
+            sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
             main.run(() -> fetcher.add('@' + name, value, -1));
         });
-        sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
+        return true;
     }
 
-    private boolean execute(CommandSender sender, String name, String value, String label) {
-        if (label.equals("cancel")) {
+    private boolean execute(CommandSender sender, String name, PermissionBox box, String label) {
+        if (label.equals("cancel") || label.equals("remove")) {
             Main.runAsync(() -> {
-                if (isZone(name)) {
-                    PermissionZone fetched = db.find(PermissionZone.class)
-                            .where()
-                            .eq("name", cutHead(name, 1))
-                            .eq("value", value)
-                            .findUnique();
-                    if (!nil(fetched)) {
-                        db.delete(fetched);
-                        main.run(() -> fetcher.remove(name, value));
-                    }
-                    sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
-                } else {
-                    PermissionUser fetched = db.find(PermissionUser.class)
-                            .where()
-                            .eq("name", name)
-                            .eq("value", value)
-                            .gt("outdated", new Timestamp(now()))
-                            .findUnique();
-                    if (fetched == null) {
-                        sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
-                    } else {
-                        db.delete(fetched);
-                        main.run(() -> fetcher.remove(name, value));
-                        sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
-                    }
-                }
+                remove(name, box.flat());
+                sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
             });
             return true;
         } else {
-            return execute(sender, name, value, Integer.parseInt(label));
+            $.thr($.isZone(name), "");
+            int day = Integer.parseInt(label);
+            return addToUser(sender, name, box, day);
         }
     }
 
-    private boolean execute(CommandSender sender, String name, String value, long day) {
+    private void remove(String name, String value) {
         if (isZone(name)) {
-            sender.sendMessage(ChatColor.DARK_RED + "Operation except cancel!");
-        } else if (day == 0) {
-            sender.sendMessage(ChatColor.DARK_RED + "Daytime can not be zero!");
+            val fetched = db.find(PermissionZone.class)
+                    .where("name = :name and value = :value")
+                    .setParameter("name", cutHead(name))
+                    .setParameter("value", value)
+                    .findUnique();
+            if (!nil(fetched)) {
+                db.delete(fetched);
+                main.run(() -> fetcher.remove(name, value));
+            }
         } else {
-            Main.runAsync(() -> {
-                PermissionUser fetched = db.find(PermissionUser.class)
-                        .where()
-                        .eq("name", name)
-                        .eq("value", value)
-                        .gt("outdated", new Timestamp(now()))
-                        .findUnique();
-                if (fetched == null) {
-                    if (day > 0) {
-                        PermissionUser user = new PermissionUser();
-                        user.setName(name);
-                        user.setValue(value);
-                        user.setType($.isZone(value) ? 1 : 0);
-                        if (main.getConfig().getBoolean("day.fully")) {
-
-                            user.setOutdated($.next(day));
-                        } else {
-                            val now = LocalDate.now().plusDays(day).atStartOfDay();
-                            user.setOutdated(new Timestamp(now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()));
-                        }
-                        db.save(user);
-                        main.run(() -> fetcher.add(name, value, user.getOutdatedTime()));
-                    }
-                    sender.sendMessage(ChatColor.GOLD + "Specific operation done!");
-                } else {
-                    fetched.setOutdated($.next(fetched.getOutdated().toLocalDateTime(), day));
-                    fetcher.add(name, value, fetched.getOutdatedTime());
-                    db.save(fetched);
-                    sender.sendMessage(ChatColor.GOLD + "Increased outdated done!");
-                }
-            });
-            return true;
+            val fetched = db.find(PermissionUser.class)
+                    .where("name = :name and value = :value and outdated > now()")
+                    .setParameter("name", name)
+                    .setParameter("value", value)
+                    .findUnique();
+            if (!$.nil(fetched)) {
+                db.delete(fetched);
+                main.run(() -> fetcher.remove(name, value));
+            }
         }
-        return false;
+    }
+
+    private boolean addToUser(CommandSender sender, String name, PermissionBox box, long day) {
+        $.thr(day == 0x00, "Add daytime can't be zero");
+        Main.runAsync(() -> {
+            val value = box.flat();
+            val ext = db.find(PermissionUser.class)
+                    .where("name = :name and value = :value and outdated > now()")
+                    .setParameter("name", name)
+                    .setParameter("value", value)
+                    .findUnique();
+            if ($.nil(ext)) {
+                if (!(box.isAlter() || day < 1)) {
+                    val add = new PermissionUser();
+                    add.setName(name);
+                    add.setValue(value);
+                    add.setType(box.isZone());
+                    if (main.getConfig().getBoolean("day.fully")) {
+                        add.setOutdated($.next(day));
+                    } else {
+                        val now = LocalDate.now().plusDays(day).atStartOfDay();
+                        add.setOutdated(Timestamp.from(now.atZone(ZoneId.systemDefault()).toInstant()));
+                    }
+                    db.save(add);
+                    main.run(() -> fetcher.add(name, value, add.getOutdated().getTime()));
+                    sender.sendMessage(ChatColor.GOLD + "Okay!");
+                }
+            } else {
+                ext.setOutdated($.next(ext.getOutdated().toLocalDateTime(), day));
+                fetcher.add(name, value, ext.getOutdated().getTime());
+                db.save(ext);
+                main.run(() -> fetcher.add(name, value, ext.getOutdated().getTime()));
+                sender.sendMessage(ChatColor.GOLD + "Okay!");
+            }
+        });
+        return true;
     }
 
     private boolean isLoop(String name, String zone) {
-        val attach = PermissionValue.build(zone, -1);
+        val attach = PermissionValue.build("@" + zone, -1);
         fetcher.fetchZone(attach);
         return !$.nil(attach.lookSub("@" + name));
     }
 
     @Override
     public boolean addPermission(Player p, String permission, int time) {
-        return execute(main.getServer().getConsoleSender(), p.getName(), permission, time);
+        return addToUser(Bukkit.getConsoleSender(), p.getName(), PermissionBox.of(permission), time);
     }
 
     @Override

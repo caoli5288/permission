@@ -9,12 +9,12 @@ import lombok.RequiredArgsConstructor;
  */
 @Data
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public class Pair<K, V> {
+public class Pair<L, R> {
 
-    private final K key;
-    private final V value;
+    private final L left;
+    private final R right;
 
-    public static <K, V> Pair<K, V> of(K key, V value) {
-        return new Pair<>(key, value);
+    public static <L, R> Pair<L, R> of(L left, R right) {
+        return new Pair<>(left, right);
     }
 }

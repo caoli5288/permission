@@ -21,6 +21,8 @@ This is a light weight permission plugin for bukkit based minecraft server.
   - Use permission him xkit.use -7 to withdraw 7day expires is goodway.
 - /permission @default_group xkit.use cancel
   - This command remove permission xkit.use from group default_group.
+- /permission him ?xkit.use 7
+  - This command give player him xkit.use extra 7 day if already had xkit.use permission(silence ignore if not).
 
 ## Permission
 - permission.use
