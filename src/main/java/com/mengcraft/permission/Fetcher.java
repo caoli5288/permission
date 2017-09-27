@@ -88,13 +88,10 @@ public enum Fetcher implements PluginMessageListener, Runnable {
     }
 
     private void remove4Zone(String zone, String value) {
-        $.walk(fetched, (k, v) -> {
-            val look = v.look(zone, true);
+        $.walk(fetched, (who, attachment) -> {
+            val look = attachment.look(zone, true);
             if (!$.nil(look)) {
-                val sub = look.getRight().removeSub(value);
-                if (!$.nil(sub)) {
-                    sub.cancel(v.getAttachment());
-                }
+                look.getLeft().removeSub(value).cancel(attachment.getAttachment());
             }
         });
     }
