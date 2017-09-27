@@ -10,14 +10,12 @@ import lombok.val;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
-import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static com.google.common.io.ByteStreams.newDataInput;
 import static com.google.common.io.ByteStreams.newDataOutput;
-import static com.mengcraft.permission.$.now;
 
 /**
  * Created on 16-4-8.
@@ -50,7 +48,7 @@ public enum Fetcher implements PluginMessageListener, Runnable {
             if (!$.nil(attachment)) {
                 val attach = PermissionValue.build(value, outdated);
                 if ($.isZone(value)) {
-                    fetchZone(attach);
+                    fetchSub(new HashMap<>(), attach);
                 }
                 attachment.handle(attach);
             }
@@ -58,16 +56,17 @@ public enum Fetcher implements PluginMessageListener, Runnable {
         sendMessage(name, value, outdated, true, b);
     }
 
-    private void addToZone(String name, String value) {
-        val attach = PermissionValue.build(value, -1);
-        if ($.isZone(value)) {
-            fetchZone(attach);
+    private void addToZone(String zone, String add) {
+        val attach = PermissionValue.build(add, -1);
+        if ($.isZone(add)) {
+            fetchSub(new HashMap<>(), attach);
         }
-        $.walk(fetched, (k, v) -> {
-            val look = v.look(name, true);
+        $.walk(fetched, (who, attachment) -> {
+            val look = attachment.look(zone, true);
             if (!$.nil(look)) {
-                look.getRight().getSublist().add(attach.mirror());
-                look.getRight().handle(v.getAttachment());
+                val mirror = attach.mirror();
+                look.getRight().getSublist().add(mirror);
+                mirror.handle(attachment.getAttachment());
             }
         });
     }
@@ -88,9 +87,9 @@ public enum Fetcher implements PluginMessageListener, Runnable {
         sendMessage(name, value, -1, false, b);
     }
 
-    private void remove4Zone(String name, String value) {
+    private void remove4Zone(String zone, String value) {
         $.walk(fetched, (k, v) -> {
-            val look = v.look(name, true);
+            val look = v.look(zone, true);
             if (!$.nil(look)) {
                 val sub = look.getRight().removeSub(value);
                 if (!$.nil(sub)) {
@@ -103,31 +102,35 @@ public enum Fetcher implements PluginMessageListener, Runnable {
     public void fetch(Player p) {
         Main.runAsync(() -> {
             val list = db.find(PermissionUser.class)
-                    .where()
-                    .eq("name", p.getName())
-                    .gt("outdated", new Timestamp(now()))
+                    .where("name = :name and outdated > now()")
+                    .setParameter("name", p.getName())
                     .orderBy("type desc")
                     .findList();
 
             val collect = $.map(list, PermissionValue::build);
-            $.walk(collect, attach -> $.isZone(attach.getValue()), this::fetchZone);
+
+            val mapping = new HashMap<String, List<PermissionZone>>();
+            $.walk(collect, attach -> $.isZone(attach.getValue()), v -> fetchSub(mapping, v)
+            );
 
             main.run(() -> handle(p, collect));
         });
     }
 
-    public void fetchZone(PermissionValue attach) {
-        $.thr(!$.isZone(attach.getValue()), "Illegal argument");
-        val list = db.find(PermissionZone.class)
-                .where()
-                .eq("name", $.cutHead(attach.getValue()))
+    public void fetchSub(Map<String, List<PermissionZone>> mapping, PermissionValue value) {
+        $.thr(!$.isZone(value.getValue()), "Illegal argument");
+
+        val list = mapping.computeIfAbsent($.cutHead(value.getValue()), name -> db.find(PermissionZone.class)
+                .where("name = :name")
+                .setParameter("name", name)
                 .orderBy("type desc")
-                .findList();
+                .findList()
+        );
 
         val collect = $.map(list, PermissionValue::build);
-        attach.getSublist().addAll(collect);
+        value.getSublist().addAll(collect);
 
-        $.walk(collect, a -> $.isZone(a.getValue()), this::fetchZone);
+        $.walk(collect, i -> $.isZone(i.getValue()), v -> fetchSub(mapping, v));
     }
 
     private void handle(Player p, List<PermissionValue> list) {

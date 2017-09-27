@@ -16,6 +16,7 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
@@ -207,7 +208,7 @@ public class MainCommand implements CommandExecutor, Permission {
 
     private boolean isLoop(String name, String zone) {
         val attach = PermissionValue.build("@" + zone, -1);
-        fetcher.fetchZone(attach);
+        fetcher.fetchSub(new HashMap<>(), attach);
         return !$.nil(attach.lookSub("@" + name));
     }
 
